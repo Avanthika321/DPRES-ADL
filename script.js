@@ -1,223 +1,114 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const navItems = document.querySelectorAll('nav li');
-    const sections = document.querySelectorAll('section');
+let currentRole = 'student';
 
-    // Section Switching Logic
-    navItems.forEach(item => {
-        item.addEventListener('click', () => {
-            const sectionId = item.getAttribute('data-section');
+const roleData = {
+    admin: {
+        title: "Admin Control Center",
+        subtitle: "System oversight and user management portal",
+        badge: "System Administrator",
+        colorClass: "card-admin",
+        features: [
+            { icon: "fa-users-gear", title: "Manage Users", desc: "Add, edit, or deactivate system participants." },
+            { icon: "fa-book-open", title: "Manage Modules", desc: "Curate and organize learning material databases." },
+            { icon: "fa-vr-cardboard", title: "Manage Drills", desc: "Monitor and configure virtual simulation sessions." },
+            { icon: "fa-bullhorn", title: "Broadcast Alerts", desc: "Send emergency notifications to all roles.", special: "btn-red" },
+            { icon: "fa-chart-pie", title: "View Reports", desc: "Analyze system-wide performance and readiness." }
+        ]
+    },
+    teacher: {
+        title: "Teacher Dashboard",
+        subtitle: "Classroom management and progress tracking",
+        badge: "Educator",
+        colorClass: "card-teacher",
+        features: [
+            { icon: "fa-cloud-arrow-up", title: "Upload Modules", desc: "Share new learning resources with your students." },
+            { icon: "fa-clipboard-question", title: "Manage Quizzes", desc: "Create and evaluate assessments for your classes." },
+            { icon: "fa-user-check", title: "Student Performance", desc: "Review individual and group drill results." },
+            { icon: "fa-arrow-trend-up", title: "Track Progress", desc: "Monitor learning curve and engagement metrics." }
+        ]
+    },
+    student: {
+        title: "Student Portal",
+        subtitle: "Your personal disaster preparedness roadmap",
+        badge: "Learner",
+        colorClass: "card-student",
+        features: [
+            { icon: "fa-book", title: "Learning Modules", desc: "Access your assigned educational content." },
+            { icon: "fa-fire-extinguisher", title: "Virtual Drills", desc: "Participate in immersive response simulations." },
+            { icon: "fa-medal", title: "Earn Badges", desc: "Complete challenges to unlock safety certifications." },
+            { icon: "fa-ranking-star", title: "Leaderboard", desc: "Compare your readiness score with peers." },
+            { icon: "fa-pen-to-square", title: "Attempt Quizzes", desc: "Test your knowledge on recent safety modules." }
+        ]
+    }
+};
 
-            // Update active nav
-            navItems.forEach(nav => nav.classList.remove('active'));
-            item.classList.add('active');
+function selectRole(role) {
+    currentRole = role;
 
-            // Show relevant section
-            // In a real app, this would dynamically load/render content
-            // For now, we'll implement the specific sections requested
-            renderSection(sectionId);
-        });
+    // Update UI buttons
+    document.querySelectorAll('.role-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.currentTarget.classList.add('active');
+}
+
+function handleLogin() {
+    // Hidden transition
+    const loginPage = document.getElementById('login-page');
+    const appWrapper = document.getElementById('app-wrapper');
+
+    loginPage.style.display = 'none';
+    appWrapper.style.display = 'flex';
+
+    renderDashboard();
+}
+
+function renderDashboard() {
+    const data = roleData[currentRole];
+
+    // Update Header
+    document.getElementById('dash-title').innerText = data.title;
+    document.getElementById('dash-subtitle').innerText = data.subtitle;
+    document.getElementById('role-badge').innerText = data.badge;
+    document.getElementById('user-name-label').innerText = `${currentRole.charAt(0).toUpperCase() + currentRole.slice(1)} User`;
+
+    // Render Feature Cards
+    const content = document.getElementById('dashboard-content');
+    let cardsHtml = `<div class="stat-grid">`;
+
+    data.features.forEach(feat => {
+        cardsHtml += `
+            <div class="feature-card glass ${data.colorClass} animate-fade">
+                <i class="fa-solid ${feat.icon}" style="font-size: 2rem; margin-bottom: 20px;"></i>
+                <h3>${feat.title}</h3>
+                <p>${feat.desc}</p>
+                <div style="margin-top: 20px;">
+                    <button class="btn ${feat.special ? feat.special + ' broadcast-btn' : 'btn-blue'}" 
+                            onclick="handleAction('${feat.title}')">
+                        ${feat.special ? 'BROADCAST' : 'Open Feature'}
+                    </button>
+                </div>
+            </div>
+        `;
     });
 
-    function renderSection(id) {
-        const contentArea = document.getElementById('content-area');
+    cardsHtml += `</div>`;
+    content.innerHTML = cardsHtml;
+}
 
-        if (id === 'overview') {
-            location.reload();
-            return;
-        }
-
-        let html = '';
-        switch (id) {
-            case 'users':
-                html = `
-                    <section class="active-section">
-                        <div class="section-header glass">
-                            <h2>Manage Users</h2>
-                            <button class="add-btn">+ Add New User</button>
-                        </div>
-                        <div class="table-container glass float-3d" style="margin-top: 20px;">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Name</th>
-                                        <th>Role</th>
-                                        <th>Status</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td><div class="user-cell"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=John" alt=""> John Doe</div></td>
-                                        <td>Student</td>
-                                        <td><span class="status-badge active">Active</span></td>
-                                        <td><button class="icon-btn"><i class="fas fa-edit"></i></button> <button class="icon-btn delete"><i class="fas fa-trash"></i></button></td>
-                                    </tr>
-                                    <tr>
-                                        <td><div class="user-cell"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Jane" alt=""> Jane Smith</div></td>
-                                        <td>Teacher</td>
-                                        <td><span class="status-badge active">Active</span></td>
-                                        <td><button class="icon-btn"><i class="fas fa-edit"></i></button> <button class="icon-btn delete"><i class="fas fa-trash"></i></button></td>
-                                    </tr>
-                                    <tr>
-                                        <td><div class="user-cell"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Mike" alt=""> Mike Ross</div></td>
-                                        <td>Student</td>
-                                        <td><span class="status-badge inactive">Inactive</span></td>
-                                        <td><button class="icon-btn"><i class="fas fa-edit"></i></button> <button class="icon-btn delete"><i class="fas fa-trash"></i></button></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </section>
-                `;
-                break;
-            case 'drills':
-                html = `
-                    <section class="active-section">
-                        <div class="drill-layout">
-                            <div class="drill-form glass float-3d">
-                                <h3>Create Virtual Drill</h3>
-                                <div class="form-group">
-                                    <label>Drill Title</label>
-                                    <input type="text" placeholder="e.g., Earthquake Evacuation">
-                                </div>
-                                <div class="form-group">
-                                    <label>Disaster Type</label>
-                                    <select>
-                                        <option>Flood</option>
-                                        <option>Earthquake</option>
-                                        <option>Cyclone</option>
-                                        <option>Fire</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label>Question</label>
-                                    <textarea placeholder="Ask a question..."></textarea>
-                                </div>
-                                <div class="options-grid">
-                                    <input type="text" placeholder="Option A">
-                                    <input type="text" placeholder="Option B">
-                                    <input type="text" placeholder="Option C">
-                                    <input type="text" placeholder="Option D">
-                                </div>
-                                <div class="form-group">
-                                    <label>Correct Answer</label>
-                                    <select>
-                                        <option>Option A</option>
-                                        <option>Option B</option>
-                                        <option>Option C</option>
-                                        <option>Option D</option>
-                                    </select>
-                                </div>
-                                <button class="publish-btn">Publish Drill</button>
-                            </div>
-                            <div class="drill-list-container">
-                                <h3>Recently Created Drills</h3>
-                                <div class="drill-card glass float-3d">
-                                    <div class="drill-icon fire"><i class="fas fa-fire"></i></div>
-                                    <div class="drill-info">
-                                        <h4>Fire Safety 101</h4>
-                                        <p>Created: 2 days ago</p>
-                                    </div>
-                                </div>
-                                <div class="drill-card glass float-3d">
-                                    <div class="drill-icon water"><i class="fas fa-tint"></i></div>
-                                    <div class="drill-info">
-                                        <h4>Flood Prevention</h4>
-                                        <p>Created: 5 days ago</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-                `;
-                break;
-            case 'reports':
-                html = `
-                    <section class="active-section">
-                        <div class="reports-grid">
-                            <div class="chart-box glass float-3d">
-                                <h3>Disaster Awareness Level</h3>
-                                <div class="pie-chart-mock">
-                                    <div class="slice" style="--bg: var(--electric-cyan); --deg: 120deg;"></div>
-                                    <div class="slice" style="--bg: var(--neon-red); --deg: 240deg;"></div>
-                                    <div class="slice" style="--bg: #ffcc00; --deg: 360deg;"></div>
-                                </div>
-                                <div class="legend">
-                                    <span><i style="background: var(--electric-cyan)"></i> High</span>
-                                    <span><i style="background: var(--neon-red)"></i> Medium</span>
-                                    <span><i style="background: #ffcc00"></i> Low</span>
-                                </div>
-                            </div>
-                            <div class="progress-box glass float-3d">
-                                <h3>Readiness Progress</h3>
-                                <div class="prog-item">
-                                    <p>Flood Response</p>
-                                    <div class="prog-bar"><div class="fill" style="width: 80%"></div></div>
-                                </div>
-                                <div class="prog-item">
-                                    <p>Fire Safety</p>
-                                    <div class="prog-bar"><div class="fill" style="width: 65%"></div></div>
-                                </div>
-                                <div class="prog-item">
-                                    <p>Earthquake Prep</p>
-                                    <div class="prog-bar"><div class="fill" style="width: 90%"></div></div>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-                `;
-                break;
-            case 'alerts':
-                html = `
-                    <section class="active-section alerts-page">
-                        <div class="alert-broadcast glass float-3d">
-                            <div class="alert-icon-main pulse-btn"><i class="fas fa-bullhorn"></i></div>
-                            <h2>Crisis Broadcast Center</h2>
-                            <textarea placeholder="Type your emergency message here..."></textarea>
-                            <div class="target-group">
-                                <label>Target Group:</label>
-                                <select>
-                                    <option>All Users</option>
-                                    <option>Students Only</option>
-                                    <option>Teachers Only</option>
-                                </select>
-                            </div>
-                            <button class="pulse-btn" style="width: 100%; margin-top: 20px;">Send Immediate Alert</button>
-                        </div>
-                    </section>
-                `;
-                break;
-            default:
-                html = `<div class="glass" style="padding: 40px;"><h2>${id} Section</h2><p>Coming soon...</p></div>`;
-        }
-
-        contentArea.innerHTML = html;
-
-        // Re-attach 3D effects to new elements
-        setTimeout(() => {
-            const newCards = contentArea.querySelectorAll('.float-3d');
-            newCards.forEach(card => attach3DEffect(card));
-        }, 100);
+function handleAction(action) {
+    if (action === 'Broadcast Alerts') {
+        alert('EMERGENCY BROADCAST INITIATED: System-wide alert sent.');
+    } else {
+        alert(`${action} module opened. (Dummy Data)`);
     }
+}
 
-    function attach3DEffect(card) {
-        card.addEventListener('mousemove', (e) => {
-            const rect = card.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            const centerX = rect.width / 2;
-            const centerY = rect.height / 2;
-            const rotateX = (centerY - y) / 10;
-            const rotateY = (x - centerX) / 10;
-            card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-5px)`;
-        });
+function logout() {
+    location.reload();
+}
 
-        card.addEventListener('mouseleave', () => {
-            card.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg) translateY(0)`;
-        });
-    }
-
-    // Initial 3D Tilt Effect on cards
-    const initialCards = document.querySelectorAll('.float-3d');
-    initialCards.forEach(card => attach3DEffect(card));
-});
+// Global scope for onclick handlers
+window.selectRole = selectRole;
+window.handleLogin = handleLogin;
+window.handleAction = handleAction;
+window.logout = logout;

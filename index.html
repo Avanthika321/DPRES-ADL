@@ -1,121 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CrisisCraft | Admin Dashboard</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <title>CrisisCraft | Disaster Preparedness System</title>
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-    <div class="bg-gradient"></div>
-    <div class="dashboard-container">
-        <!-- Sidebar -->
-        <aside class="sidebar glass">
-            <div class="logo">
-                <i class="fas fa-shield-alt"></i>
-                <span>CrisisCraft</span>
-            </div>
-            <nav>
-                <ul>
-                    <li class="active" data-section="overview"><i class="fas fa-th-large"></i> Dashboard</li>
-                    <li data-section="users"><i class="fas fa-users"></i> Manage Users</li>
-                    <li data-section="drills"><i class="fas fa-vr-cardboard"></i> Create Virtual Drill</li>
-                    <li data-section="reports"><i class="fas fa-chart-line"></i> Reports & Analytics</li>
-                    <li data-section="alerts"><i class="fas fa-exclamation-triangle"></i> Emergency Alerts</li>
-                    <li data-section="settings"><i class="fas fa-cog"></i> Settings</li>
-                </ul>
-            </nav>
-            <div class="logout">
-                <i class="fas fa-sign-out-alt"></i> Logout
-            </div>
-        </aside>
-
-        <!-- Main Content -->
-        <main class="main-content">
-            <!-- Header -->
-            <header class="header glass">
-                <div class="system-status">
-                    <span class="status-indicator active"></span>
-                    <span>System Status: <strong>Active</strong></span>
-                </div>
-                <div class="header-right">
-                    <div class="notifications">
-                        <i class="far fa-bell"></i>
-                        <span class="badge">3</span>
-                    </div>
-                    <div class="profile">
-                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Admin" alt="Admin Profile">
-                        <span>Admin Profile</span>
-                    </div>
-                </div>
-            </header>
-
-            <!-- Dynamic Sections -->
-            <div id="content-area">
-                <!-- Overview Section (Default) -->
-                <section id="overview-section" class="active-section">
-                    <div class="overview-grid">
-                        <div class="card glass float-3d">
-                            <i class="fas fa-user-graduate icon"></i>
-                            <div class="card-info">
-                                <h3>Total Students</h3>
-                                <p class="number">1,284</p>
-                            </div>
-                        </div>
-                        <div class="card glass float-3d">
-                            <i class="fas fa-chalkboard-teacher icon"></i>
-                            <div class="card-info">
-                                <h3>Total Teachers</h3>
-                                <p class="number">42</p>
-                            </div>
-                        </div>
-                        <div class="card glass float-3d">
-                            <i class="fas fa-running icon"></i>
-                            <div class="card-info">
-                                <h3>Active Drills</h3>
-                                <p class="number">15</p>
-                            </div>
-                        </div>
-                        <div class="card glass float-3d">
-                            <div class="progress-circle" style="--percent: 75">
-                                <svg>
-                                    <circle cx="40" cy="40" r="35"></circle>
-                                    <circle cx="40" cy="40" r="35"></circle>
-                                </svg>
-                                <span class="percent">75%</span>
-                            </div>
-                            <div class="card-info">
-                                <h3>Readiness Score</h3>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="content-row">
-                        <div class="chart-container glass float-3d">
-                            <h3>Drill Participation</h3>
-                            <div class="bar-chart">
-                                <!-- Dummy Bars -->
-                                <div class="bar" style="--height: 60%"><span>Mon</span></div>
-                                <div class="bar" style="--height: 85%"><span>Tue</span></div>
-                                <div class="bar" style="--height: 45%"><span>Wed</span></div>
-                                <div class="bar" style="--height: 95%"><span>Thu</span></div>
-                                <div class="bar" style="--height: 70%"><span>Fri</span></div>
-                            </div>
-                        </div>
-                        <div class="emergency-panel glass float-3d">
-                            <h3>Quick Emergency Alert</h3>
-                            <textarea placeholder="Type urgent message..."></textarea>
-                            <button class="pulse-btn">Broadcast Alert</button>
-                        </div>
-                    </div>
-                </section>
-            </div>
-        </main>
+    <div id="app-root">
     </div>
-    <script src="script.js"></script>
+    <!-- Scripts -->
+    <script src="data.js"></script>
+    <script src="app.js"></script>
 </body>
+
 </html>
