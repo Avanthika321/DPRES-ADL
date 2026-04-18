@@ -866,53 +866,24 @@ const App = {
 
     // --- Manage Quizzes ---
     getManageQuizzes() {
-        if (!this.state.quizStatuses) {
-            this.state.quizStatuses = CrisisData.quizzes.map(() => 'Active');
-        }
-        const statuses = this.state.quizStatuses;
+        // TODO: Replace with API call to GET /api/quizzes
         return `
-            <div class="glass" style="padding:35px;">
+            <div class="glass" style="padding:40px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
                     <div>
                         <h3 style="margin-bottom:5px;">Manage Quizzes</h3>
-                        <p style="color:var(--text-secondary); font-size:0.85rem;">Create, edit, and manage your assessment quizzes</p>
+                        <p style="color:var(--text-secondary); font-size:0.85rem;">Loading quizzes from API...</p>
                     </div>
-                    <button class="btn btn-primary" style="width:auto; padding:10px 22px;" onclick="App.showCreateQuizModal()">
+                    <button class="btn btn-primary" style="width:auto; padding:10px 22px;" onclick="App.showToast('Requires: POST /api/quizzes', 'error')">
                         <i class="fas fa-plus" style="margin-right:8px;"></i>Create Quiz
                     </button>
                 </div>
-                <div style="display:grid; gap:12px;">
-                    ${CrisisData.quizzes.map((q, i) => {
-            const isActive = statuses[i] === 'Active';
-            const questionCount = q.questionsList ? q.questionsList.length : (q.questions || 0);
-            const timeLimit = q.timeLimit || 30;
-            return `
-                        <div class="glass" style="padding:20px 25px; border:1px solid ${isActive ? 'rgba(0,245,255,0.15)' : 'rgba(255,255,255,0.05)'}; opacity:${isActive ? 1 : 0.7}; transition:0.2s;">
-                            <div style="display:flex; align-items:center; justify-content:space-between;">
-                                <div style="flex:1;">
-                                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
-                                        <h4 style="font-size:1rem;">${q.title}</h4>
-                                        <span style="background:${isActive ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.05)'}; color:${isActive ? '#22c55e' : 'var(--text-secondary)'}; padding:3px 10px; border-radius:10px; font-size:0.72rem; font-weight:600;">${isActive ? 'ACTIVE' : 'DRAFT'}</span>
-                                    </div>
-                                    <div style="display:flex; gap:20px; font-size:0.82rem; color:var(--text-secondary);">
-                                        <span><i class="fas fa-question-circle" style="margin-right:5px;"></i>${questionCount} Questions</span>
-                                        <span><i class="fas fa-clock" style="margin-right:5px;"></i>${timeLimit} min</span>
-                                        <span><i class="fas fa-users" style="margin-right:5px;"></i>${q.status === 'Completed' ? '154 submitted' : 'Not attempted'}</span>
-                                        <span><i class="fas fa-calendar" style="margin-right:5px;"></i>Deadline: ${q.status === 'Completed' ? 'Passed' : 'Open'}</span>
-                                    </div>
-                                </div>
-                                <div style="display:flex; gap:8px; align-items:center;">
-                                    <button class="btn" style="background:rgba(255,255,255,0.06); border:1px solid var(--glass-border); width:auto; padding:8px 14px; color:white; font-size:0.8rem;" onclick="App.showEditQuizModal(${i})">
-                                        <i class="fas fa-pen" style="margin-right:5px;"></i>Edit
-                                    </button>
-                                    <button class="btn" style="background:${isActive ? 'rgba(239,68,68,0.1)' : 'rgba(34,197,94,0.1)'}; color:${isActive ? 'var(--red)' : '#22c55e'}; border:1px solid ${isActive ? 'rgba(239,68,68,0.3)' : 'rgba(34,197,94,0.3)'}; width:auto; padding:8px 14px; font-size:0.8rem;" onclick="App.toggleQuizStatus(${i})">
-                                        <i class="fas ${isActive ? 'fa-pause' : 'fa-play'}" style="margin-right:5px;"></i>${isActive ? 'Deactivate' : 'Activate'}
-                                    </button>
-                                    <i class="fas fa-trash" style="color:var(--red); cursor:pointer; opacity:0.5; transition:0.2s; padding:8px;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.5" onclick="App.deleteQuiz(${i})"></i>
-                                </div>
-                            </div>
-                        </div>`;
-        }).join('')}
+                <div style="text-align: center; padding: 40px;">
+                    <i class="fas fa-question-circle" style="font-size: 2.5rem; color: var(--text-secondary); opacity: 0.5; margin-bottom: 15px; display: block;"></i>
+                    <p style="color: var(--text-secondary); font-size: 0.85rem;">
+                        <i class="fas fa-code" style="margin-right: 8px;"></i>
+                        Requires: GET /api/quizzes
+                    </p>
                 </div>
             </div>`;
     },
