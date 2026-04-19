@@ -64,6 +64,26 @@ const loginUser = async (req, res) => {
     }
 };
 
+// @desc    Verify JWT token
+// @route   GET /api/auth/verify
+// @access  Protected
+const verifyToken = async (req, res) => {
+    try {
+        // If middleware passed, token is valid
+        res.json({
+            valid: true,
+            user: {
+                _id: req.user._id,
+                name: req.user.name,
+                email: req.user.email,
+                role: req.user.role
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 // Generate JWT
 const generateToken = (id) => {
     return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -71,4 +91,4 @@ const generateToken = (id) => {
     });
 };
 
-module.exports = { registerUser, loginUser };
+module.exports = { registerUser, loginUser, verifyToken };

@@ -30,8 +30,44 @@ const App = {
     },
 
     init() {
+        this.checkAutoLogin();
         this.loadState();
         this.render();
+    },
+
+    async checkAutoLogin() {
+        const token = localStorage.getItem('crisis_craft_token');
+        const role = localStorage.getItem('crisis_craft_role');
+        const userName = localStorage.getItem('crisis_craft_user');
+
+        if (token && role && userName) {
+            try {
+                // Verify token is still valid by making a test API call
+                const response = await fetch('http://localhost:5000/api/auth/verify', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    // Token is valid, auto-login user
+                    this.state.role = role;
+                    this.state.isLoggedIn = true;
+                    this.state.activeSection = 'Dashboard';
+                    this.state.isLoadingModules = false;
+                    // Load modules for the user
+                    await this.loadModules();
+                } else {
+                    // Token invalid, clear localStorage
+                    this.logout();
+                }
+            } catch (error) {
+                // Network error, clear localStorage to be safe
+                this.logout();
+            }
+        }
     },
 
     saveState() {
@@ -596,28 +632,12 @@ const App = {
                 </div>
                 <div class="glass" style="padding: 40px; max-width: 900px;">
                     <h2 style="margin-bottom: 25px;">Student Drill Activity Reports</h2>
-                    <table style="width: 100%; border-collapse: collapse; text-align: left;">
-                        <thead>
-                            <tr style="color: var(--text-secondary); border-bottom: 1px solid var(--glass-border);">
-                                <th style="padding: 15px 0;">DRILL NAME</th><th style="padding: 15px 0;">PARTICIPATION</th><th style="padding: 15px 0;">AVG SCORE</th><th style="padding: 15px 0;">STATUS</th><th style="padding: 15px 0;">ACTION</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${CrisisData.drills.map(drill => `
-                                <tr style="border-bottom: 1px solid var(--glass-border);">
-                                    <td style="padding: 15px 0; font-weight: 500;">${drill.title}</td>
-                                    <td style="padding: 15px 0; color: var(--cyan);">${drill.participation}%</td>
-                                    <td style="padding: 15px 0; color: ${drill.score > 85 ? '#22c55e' : '#eab308'};">${drill.score}%</td>
-                                    <td style="padding: 15px 0;">
-                                        <span style="background: rgba(255,255,255,0.05); padding: 5px 10px; border-radius: 8px; font-size: 0.8rem;">${drill.status}</span>
-                                    </td>
-                                    <td style="padding: 15px 0;">
-                                        <button class="btn" onclick="App.exportCSV('drill')" style="padding: 5px 15px; font-size: 0.8rem; height: auto; background: rgba(0, 245, 255, 0.1); color: var(--cyan); border: 1px solid rgba(0, 245, 255, 0.3);"><i class="fas fa-download" style="margin-right:6px;"></i>Export Report</button>
-                                    </td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
+                    <div style="text-align: center; padding: 40px;">
+                        <i class="fas fa-code" style="font-size: 2rem; color: var(--text-secondary); opacity: 0.5; margin-bottom: 15px; display: block;"></i>
+                        <p style="color: var(--text-secondary); font-size: 0.85rem;">
+                            Requires: GET /api/drills/reports
+                        </p>
+                    </div>
                 </div>
             </div>`;
         }
@@ -645,22 +665,46 @@ const App = {
     },
 
     getManageUsers() {
-        // TODO: Replace with API call to GET /api/admin/users
+        // Sample teacher data with classes
+        const teachers = [
+            { name: "Jane Smith", email: "jane.smith@crisiscraft.edu", class: "Grade 10B - Emergency Response", students: 28 },
+            { name: "Samuel Jackson", email: "s.jackson@riverside.edu", class: "Grade 11A - Advanced Safety", students: 32 },
+            { name: "Dr. Maria Rodriguez", email: "maria.rodriguez@crisiscraft.edu", class: "Grade 10A - Emergency Response", students: 26 },
+            { name: "Prof. James Wilson", email: "james.wilson@crisiscraft.edu", class: "Grade 11B - Disaster Management", students: 29 },
+            { name: "Ms. Lisa Chen", email: "lisa.chen@crisiscraft.edu", class: "Grade 9C - Safety Education", students: 31 }
+        ];
+
         return `
             <div class="glass" style="padding: 40px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
                     <div>
-                        <h3>Manage Users</h3>
-                        <p style="color: var(--text-secondary); font-size: 0.85rem;">Loading users from API...</p>
+                        <h3>Manage Teachers & Classes</h3>
+                        <p style="color: var(--text-secondary); font-size: 0.85rem;">${teachers.length} active teachers managing classes</p>
                     </div>
-                    <button class="btn btn-primary" style="width: auto; padding: 10px 20px;" onclick="App.showToast('Requires: POST /api/admin/users', 'error')">+ Add User</button>
+                    <button class="btn btn-primary" style="width: auto; padding: 10px 20px;" onclick="App.showToast('Requires: POST /api/admin/users', 'error')">+ Add Teacher</button>
                 </div>
-                <div style="text-align: center; padding: 40px;">
-                    <i class="fas fa-users" style="font-size: 2.5rem; color: var(--text-secondary); opacity: 0.5; margin-bottom: 15px; display: block;"></i>
-                    <p style="color: var(--text-secondary); font-size: 0.85rem;">
-                        <i class="fas fa-code" style="margin-right: 8px;"></i>
-                        Requires: GET /api/admin/users
-                    </p>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px;">
+                    ${teachers.map(teacher => `
+                        <div class="glass glass-card" style="padding: 25px; border: 1px solid rgba(0,245,255,0.15);">
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+                                <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(0,245,255,0.1); display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-chalkboard-teacher" style="color: var(--cyan); font-size: 1.3rem;"></i>
+                                </div>
+                                <span style="font-size: 0.8rem; font-weight: 600; color: var(--cyan);">${teacher.students} students</span>
+                            </div>
+                            <h4 style="margin-bottom: 8px; line-height: 1.3;">${teacher.name}</h4>
+                            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px;">${teacher.class}</p>
+                            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 15px;">${teacher.email}</p>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn" style="flex: 1; padding: 8px; font-size: 0.8rem;" onclick="App.showToast('View ${teacher.name}\'s class', 'info')">
+                                    <i class="fas fa-eye"></i> View Class
+                                </button>
+                                <button class="btn" style="background: rgba(239,68,68,0.1); color: var(--red); padding: 8px 12px; font-size: 0.8rem;" onclick="App.showToast('Remove teacher', 'error')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `).join('')}
                 </div>
             </div>
         `;
@@ -795,7 +839,6 @@ const App = {
                 </div>
             </div>`;
     },
-    },
 
     handleFileSelect(input) {
         const file = input.files[0];
@@ -866,167 +909,81 @@ const App = {
 
     // --- Manage Quizzes ---
     getManageQuizzes() {
-        if (!this.state.quizStatuses) {
-            this.state.quizStatuses = CrisisData.quizzes.map(() => 'Active');
-        }
-        const statuses = this.state.quizStatuses;
+        // TODO: Replace with API call to GET /api/quizzes
         return `
-            <div class="glass" style="padding:35px;">
+            <div class="glass" style="padding:40px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
                     <div>
                         <h3 style="margin-bottom:5px;">Manage Quizzes</h3>
-                        <p style="color:var(--text-secondary); font-size:0.85rem;">Create, edit, and manage your assessment quizzes</p>
+                        <p style="color:var(--text-secondary); font-size:0.85rem;">Loading quizzes from API...</p>
                     </div>
-                    <button class="btn btn-primary" style="width:auto; padding:10px 22px;" onclick="App.showCreateQuizModal()">
+                    <button class="btn btn-primary" style="width:auto; padding:10px 22px;" onclick="App.showToast('Requires: POST /api/quizzes', 'error')">
                         <i class="fas fa-plus" style="margin-right:8px;"></i>Create Quiz
                     </button>
                 </div>
-                <div style="display:grid; gap:12px;">
-                    ${CrisisData.quizzes.map((q, i) => {
-            const isActive = statuses[i] === 'Active';
-            const questionCount = q.questionsList ? q.questionsList.length : (q.questions || 0);
-            const timeLimit = q.timeLimit || 30;
-            return `
-                        <div class="glass" style="padding:20px 25px; border:1px solid ${isActive ? 'rgba(0,245,255,0.15)' : 'rgba(255,255,255,0.05)'}; opacity:${isActive ? 1 : 0.7}; transition:0.2s;">
-                            <div style="display:flex; align-items:center; justify-content:space-between;">
-                                <div style="flex:1;">
-                                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
-                                        <h4 style="font-size:1rem;">${q.title}</h4>
-                                        <span style="background:${isActive ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.05)'}; color:${isActive ? '#22c55e' : 'var(--text-secondary)'}; padding:3px 10px; border-radius:10px; font-size:0.72rem; font-weight:600;">${isActive ? 'ACTIVE' : 'DRAFT'}</span>
-                                    </div>
-                                    <div style="display:flex; gap:20px; font-size:0.82rem; color:var(--text-secondary);">
-                                        <span><i class="fas fa-question-circle" style="margin-right:5px;"></i>${questionCount} Questions</span>
-                                        <span><i class="fas fa-clock" style="margin-right:5px;"></i>${timeLimit} min</span>
-                                        <span><i class="fas fa-users" style="margin-right:5px;"></i>${q.status === 'Completed' ? '154 submitted' : 'Not attempted'}</span>
-                                        <span><i class="fas fa-calendar" style="margin-right:5px;"></i>Deadline: ${q.status === 'Completed' ? 'Passed' : 'Open'}</span>
-                                    </div>
-                                </div>
-                                <div style="display:flex; gap:8px; align-items:center;">
-                                    <button class="btn" style="background:rgba(255,255,255,0.06); border:1px solid var(--glass-border); width:auto; padding:8px 14px; color:white; font-size:0.8rem;" onclick="App.showEditQuizModal(${i})">
-                                        <i class="fas fa-pen" style="margin-right:5px;"></i>Edit
-                                    </button>
-                                    <button class="btn" style="background:${isActive ? 'rgba(239,68,68,0.1)' : 'rgba(34,197,94,0.1)'}; color:${isActive ? 'var(--red)' : '#22c55e'}; border:1px solid ${isActive ? 'rgba(239,68,68,0.3)' : 'rgba(34,197,94,0.3)'}; width:auto; padding:8px 14px; font-size:0.8rem;" onclick="App.toggleQuizStatus(${i})">
-                                        <i class="fas ${isActive ? 'fa-pause' : 'fa-play'}" style="margin-right:5px;"></i>${isActive ? 'Deactivate' : 'Activate'}
-                                    </button>
-                                    <i class="fas fa-trash" style="color:var(--red); cursor:pointer; opacity:0.5; transition:0.2s; padding:8px;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.5" onclick="App.deleteQuiz(${i})"></i>
-                                </div>
-                            </div>
-                        </div>`;
-        }).join('')}
+                <div style="text-align: center; padding: 40px;">
+                    <i class="fas fa-question-circle" style="font-size: 2.5rem; color: var(--text-secondary); opacity: 0.5; margin-bottom: 15px; display: block;"></i>
+                    <p style="color: var(--text-secondary); font-size: 0.85rem;">
+                        <i class="fas fa-code" style="margin-right: 8px;"></i>
+                        Requires: GET /api/quizzes
+                    </p>
                 </div>
             </div>`;
     },
 
     toggleQuizStatus(index) {
-        if (!this.state.quizStatuses) this.state.quizStatuses = CrisisData.quizzes.map(() => 'Active');
-        this.state.quizStatuses[index] = this.state.quizStatuses[index] === 'Active' ? 'Draft' : 'Active';
-        const quiz = CrisisData.quizzes[index];
-        this.showToast(`"${quiz.title}" set to ${this.state.quizStatuses[index]}`, 'success');
-        this.render();
+        // TODO: Implement with API call to PATCH /api/quizzes/{id}/status
+        this.showToast('Quiz status update requires API integration', 'info');
     },
 
     deleteQuiz(index) {
+        // TODO: Implement with API call to DELETE /api/quizzes/{id}
         if (!confirm('Delete this quiz permanently?')) return;
-        const title = CrisisData.quizzes[index].title;
-        CrisisData.quizzes.splice(index, 1);
-        if (this.state.quizStatuses) this.state.quizStatuses.splice(index, 1);
-        this.showToast(`"${title}" deleted`, 'success');
-        this.render();
+        this.showToast('Quiz deletion requires API integration', 'info');
     },
 
     // --- Drill Participation ---
     getDrillParticipation() {
+        // TODO: Replace with API call to GET /api/drills/participation
         return `
-            <div class="glass" style="padding:35px;">
+            <div class="glass" style="padding:40px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
                     <div>
                         <h3 style="margin-bottom:5px;">Drill Participation Overview</h3>
-                        <p style="color:var(--text-secondary); font-size:0.85rem;">Track your class's performance across all drills</p>
-                    </div>
-                    <div style="display:flex; gap:10px;">
-                        <div class="glass" style="padding:10px 18px; text-align:center; border:1px solid rgba(0,245,255,0.2);">
-                            <p style="font-size:0.75rem; color:var(--text-secondary);">Avg Participation</p>
-                            <p style="font-size:1.2rem; font-weight:700; color:var(--cyan);">${Math.round(CrisisData.drills.reduce((a, d) => a + d.participation, 0) / CrisisData.drills.length)}%</p>
-                        </div>
-                        <div class="glass" style="padding:10px 18px; text-align:center; border:1px solid rgba(139,92,246,0.2);">
-                            <p style="font-size:0.75rem; color:var(--text-secondary);">Avg Score</p>
-                            <p style="font-size:1.2rem; font-weight:700; color:var(--purple);">${Math.round(CrisisData.drills.reduce((a, d) => a + d.score, 0) / CrisisData.drills.length)}%</p>
-                        </div>
+                        <p style="color:var(--text-secondary); font-size:0.85rem;">Loading drill data from API...</p>
                     </div>
                 </div>
-                <div style="display:grid; gap:15px;">
-                    ${CrisisData.drills.map((drill, index) => {
-            const isCompleted = drill.status === 'Completed';
-            const isUpcoming = drill.status === 'Registered';
-            const borderColor = isCompleted ? 'rgba(34,197,94,0.25)' : isUpcoming ? 'rgba(0,245,255,0.25)' : 'rgba(255,255,255,0.05)';
-            const statusColor = isCompleted ? '#22c55e' : isUpcoming ? 'var(--cyan)' : 'var(--text-secondary)';
-            const statusBg = isCompleted ? 'rgba(34,197,94,0.1)' : isUpcoming ? 'rgba(0,245,255,0.1)' : 'rgba(255,255,255,0.05)';
-            const statusLabel = isUpcoming ? 'Upcoming' : drill.status;
-            const studentsJoined = isCompleted ? Math.round(154 * drill.participation / 100) : 0;
-            return `
-                        <div class="glass" style="padding:22px; border:1px solid ${borderColor}; transition:0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
-                                <div>
-                                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
-                                        <h4 style="font-size:1.05rem;">${drill.title}</h4>
-                                        <span style="background:${statusBg}; padding:3px 10px; border-radius:10px; font-size:0.72rem; font-weight:600; color:${statusColor};">${statusLabel}</span>
-                                    </div>
-                                    <p style="font-size:0.82rem; color:var(--text-secondary);"><i class="fas fa-calendar-alt" style="margin-right:5px;"></i>${drill.date}</p>
-                                </div>
-                                ${isCompleted ? `<div style="text-align:right;">
-                                    <p style="font-size:0.75rem; color:var(--text-secondary);">Class Score</p>
-                                    <p style="font-size:1.3rem; font-weight:700; color:${drill.score >= 85 ? '#22c55e' : '#eab308'};">${drill.score}%</p>
-                                </div>` : ''}
-                            </div>
-                            <div style="display:flex; gap:25px; font-size:0.85rem; color:var(--text-secondary); margin-bottom:12px;">
-                                ${isCompleted ? `
-                                    <span><i class="fas fa-user-check" style="margin-right:5px; color:#22c55e;"></i>${studentsJoined} / 154 students attended</span>
-                                    <span><i class="fas fa-percentage" style="margin-right:5px; color:var(--cyan);"></i>${drill.participation}% participation</span>
-                                ` : `
-                                    <span><i class="fas fa-user-clock" style="margin-right:5px; color:var(--cyan);"></i>154 students enrolled</span>
-                                    <span><i class="fas fa-hourglass-half" style="margin-right:5px; color:var(--cyan);"></i>Starts ${drill.date}</span>
-                                `}
-                            </div>
-                            ${isCompleted ? `
-                                <div style="width:100%; height:6px; background:rgba(255,255,255,0.05); border-radius:3px; overflow:hidden;">
-                                    <div style="width:${drill.participation}%; height:100%; background:linear-gradient(90deg, #22c55e, var(--cyan)); border-radius:3px; transition:width 0.5s;"></div>
-                                </div>
-                            ` : `
-                                <div style="display:flex; gap:8px; margin-top:5px;">
-                                    <button class="btn" style="background:rgba(0,245,255,0.1); color:var(--cyan); border:1px solid rgba(0,245,255,0.3); width:auto; padding:8px 16px; font-size:0.8rem;" onclick="App.sendDrillReminder(${index})">
-                                        <i class="fas fa-bell" style="margin-right:6px;"></i>Send Reminder
-                                    </button>
-                                    <button class="btn" style="background:rgba(255,255,255,0.05); border:1px solid var(--glass-border); width:auto; padding:8px 16px; font-size:0.8rem; color:white;" onclick="App.viewDrillDetails(${index})">
-                                        <i class="fas fa-eye" style="margin-right:6px;"></i>View Details
-                                    </button>
-                                </div>
-                            `}
-                        </div>`;
-        }).join('')}
+                <div style="text-align: center; padding: 40px;">
+                    <i class="fas fa-vr-cardboard" style="font-size: 2.5rem; color: var(--text-secondary); opacity: 0.5; margin-bottom: 15px; display: block;"></i>
+                    <p style="color: var(--text-secondary); font-size: 0.85rem;">
+                        <i class="fas fa-code" style="margin-right: 8px;"></i>
+                        Requires: GET /api/drills/participation
+                    </p>
                 </div>
             </div>`;
     },
 
 
     getTeacherOverview() {
-        const stats = CrisisData.statistics.teacher;
+        // TODO: Replace with API call to GET /api/teacher/stats and GET /api/modules
         const modules = this.state.uploadedModules || [];
         return `
             <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px;">
-                ${this.renderStatCard("Students Assigned", stats.studentsAssigned, "fa-users", "var(--cyan)")}
+                ${this.renderStatCard("Students Assigned", "28", "fa-users", "var(--cyan)")}
                 ${this.renderStatCard("Modules Uploaded", modules.length, "fa-book", "var(--indigo)")}
-                ${this.renderStatCard("Active Quizzes", stats.activeQuizzes, "fa-pen-nib", "var(--purple)")}
-                ${this.renderStatCard("Average Score", stats.averageScore + "%", "fa-graduation-cap", "var(--cyan)")}
+                ${this.renderStatCard("Active Quizzes", "3", "fa-pen-nib", "var(--purple)")}
+                ${this.renderStatCard("Average Score", "87%", "fa-graduation-cap", "var(--cyan)")}
             </div>
             <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 25px;">
                 <div class="glass" style="padding: 30px;">
                     <h3 style="margin-bottom:20px;">Module Progress</h3>
                     ${modules.map(mod => `
                         <div style="margin-bottom:15px;">
-                            <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>${mod.title}</span><span style="color:var(--cyan);">${mod.completion || 0}%</span></div>
-                            <div style="width:100%; height:6px; background:rgba(255,255,255,0.05); border-radius:3px; overflow:hidden;"><div style="width:${mod.completion || 0}%; height:100%; background:var(--cyan);"></div></div>
+                            <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>${mod.title}</span><span style="color:var(--cyan);">—</span></div>
+                            <div style="width:100%; height:6px; background:rgba(255,255,255,0.05); border-radius:3px; overflow:hidden;"><div style="width:50%; height:100%; background:var(--cyan);"></div></div>
                         </div>
                     `).join('')}
+                    <p style="color:var(--text-secondary); font-size:0.85rem; margin-top:15px;"><i class="fas fa-code" style="margin-right:8px;"></i>Requires: GET /api/teacher/stats</p>
                 </div>
                 <div class="glass" style="padding: 30px;"><h3>Student Highlights</h3>${this.getStudentPerformanceTable()}</div>
             </div>
@@ -1034,8 +991,15 @@ const App = {
     },
 
     getStudentPerformanceTable() {
-        const students = CrisisData.users.filter(u => u.role === 'Student');
-        const displayStudents = students.slice(0, 12);
+        // Sample student data for teacher dashboard
+        const students = [
+            { name: "Kavya Menon", moduleAvg: 92, quizScore: "16/20", drillReady: "Yes" },
+            { name: "Rohan Gupta", moduleAvg: 88, quizScore: "17/20", drillReady: "Yes" },
+            { name: "Alex Chen", moduleAvg: 85, quizScore: "15/20", drillReady: "Yes" },
+            { name: "Maya Rodriguez", moduleAvg: 90, quizScore: "18/20", drillReady: "Yes" },
+            { name: "Elena Petrova", moduleAvg: 82, quizScore: "14/20", drillReady: "No" },
+            { name: "David Kim", moduleAvg: 75, quizScore: "12/20", drillReady: "No" }
+        ];
 
         return `
             <table style="width: 100%; border-collapse: collapse; text-align: left; font-size:0.9rem;">
@@ -1048,114 +1012,31 @@ const App = {
                     </tr>
                 </thead>
                 <tbody>
-                    ${displayStudents.map(s => {
-            const modAvg = Math.floor(Math.random() * 30) + 70;
-            const quizScore = Math.floor(Math.random() * 5) + 15;
-            const drillReady = Math.floor(Math.random() * 40) + 60;
-            const scoreColor = quizScore >= 18 ? '#22c55e' : quizScore >= 15 ? 'var(--cyan)' : '#ef4444';
-            const readyColor = drillReady >= 90 ? '#22c55e' : drillReady >= 75 ? 'var(--cyan)' : '#ef4444';
-
-            return `
+                    ${students.map(student => `
                         <tr style="border-bottom: 1px solid var(--glass-border);">
-                            <td style="padding: 10px 0;">${s.u_name.fname} ${s.u_name.lname}</td>
-                            <td style="padding: 10px 0;">${modAvg}%</td>
-                            <td style="padding: 10px 0; color:${scoreColor}">${quizScore}/20</td>
-                            <td style="padding: 10px 0; color:${readyColor}">${drillReady}%</td>
+                            <td style="padding: 12px 0; color: white;">${student.name}</td>
+                            <td style="padding: 12px 0; color: var(--cyan);">${student.moduleAvg}%</td>
+                            <td style="padding: 12px 0; color: var(--purple);">${student.quizScore}</td>
+                            <td style="padding: 12px 0;">
+                                <span style="color: ${student.drillReady === 'Yes' ? 'var(--green)' : 'var(--red)'}; font-weight: 600;">
+                                    ${student.drillReady}
+                                </span>
+                            </td>
                         </tr>
-                    `;
-        }).join('')}
+                    `).join('')}
                 </tbody>
             </table>
         `;
     },
 
     showEditQuizModal(index) {
-        const quiz = CrisisData.quizzes[index];
-        if (document.getElementById('quizModal')) return;
-        const modal = document.createElement('div');
-        modal.id = 'quizModal';
-        modal.style.cssText = `position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(10px); display: flex; justify-content: center; align-items: center; z-index: 1000; overflow-y: auto; padding: 40px 0;`;
-
-        const qList = quiz.questionsList || [];
-
-        modal.innerHTML = `
-            <div class="glass" style="padding: 35px; width: 600px; border-radius: 20px; max-height: 90vh; overflow-y: auto; margin: auto;">
-                <h3 style="margin-bottom: 25px;">Edit Quiz: ${quiz.title}</h3>
-                
-                <div style="display:grid; grid-template-columns: 2fr 1fr 1fr; gap:15px; margin-bottom: 25px;">
-                    <div class="input-group" style="margin-bottom:0;">
-                        <label style="color:var(--text-secondary); font-size:0.8rem;">Quiz Title</label>
-                        <input type="text" id="editQuizTitle" class="input-style" value="${quiz.title}">
-                    </div>
-                    <div class="input-group" style="margin-bottom:0;">
-                        <label style="color:var(--text-secondary); font-size:0.8rem;">Questions</label>
-                        <input type="number" id="editQuizQuestions" class="input-style" value="${quiz.questions || qList.length}">
-                    </div>
-                    <div class="input-group" style="margin-bottom:0;">
-                        <label style="color:var(--text-secondary); font-size:0.8rem;">Time (min)</label>
-                        <input type="number" id="editQuizTime" class="input-style" value="${quiz.timeLimit || 30}">
-                    </div>
-                </div>
-
-                <div style="border-top: 1px solid var(--glass-border); padding-top: 20px; margin-bottom: 20px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
-                        <h4 style="font-size:1.1rem;">Questions List</h4>
-                        <button class="btn" style="width: auto; padding: 6px 15px; font-size: 0.8rem; background: rgba(0,245,255,0.1); color: var(--cyan); border: 1px solid var(--cyan);" onclick="App.addQuestionEntry()">+ Add Question</button>
-                    </div>
-                    <div id="questionsContainer" style="display:grid; gap:15px;">
-                        ${this.renderQuestionEditor(qList)}
-                    </div>
-                </div>
-
-                <div style="display: flex; gap: 12px; justify-content: flex-end; border-top: 1px solid var(--glass-border); padding-top: 20px;">
-                    <button class="btn" style="background: rgba(255,255,255,0.1); color: white; width: auto; padding: 12px 25px;" onclick="App.closeQuizModal()">Cancel</button>
-                    <button class="btn btn-primary" style="width: auto; padding: 12px 25px;" onclick="App.submitEditQuiz(${index})">Save Changes</button>
-                </div>
-            </div>`;
-        document.body.appendChild(modal);
+        // TODO: Implement with API call to GET /api/quizzes/{id}
+        this.showToast('Quiz editing requires API integration with GET /api/quizzes/{id}', 'info');
     },
 
     showCreateQuizModal() {
-        if (document.getElementById('quizModal')) return;
-        const modal = document.createElement('div');
-        modal.id = 'quizModal';
-        modal.style.cssText = `position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(10px); display: flex; justify-content: center; align-items: center; z-index: 1000; overflow-y: auto; padding: 40px 0;`;
-
-        modal.innerHTML = `
-            <div class="glass" style="padding: 35px; width: 600px; border-radius: 20px; max-height: 90vh; overflow-y: auto; margin: auto;">
-                <h3 style="margin-bottom: 25px;">Create New Quiz</h3>
-                
-                <div style="display:grid; grid-template-columns: 2fr 1fr 1fr; gap:15px; margin-bottom: 25px;">
-                    <div class="input-group" style="margin-bottom:0;">
-                        <label style="color:var(--text-secondary); font-size:0.8rem;">Quiz Title</label>
-                        <input type="text" id="newQuizTitle" class="input-style" placeholder="e.g. Seismic Safety Level 1">
-                    </div>
-                    <div class="input-group" style="margin-bottom:0;">
-                        <label style="color:var(--text-secondary); font-size:0.8rem;">Questions</label>
-                        <input type="number" id="newQuizQuestions" class="input-style" value="10">
-                    </div>
-                    <div class="input-group" style="margin-bottom:0;">
-                        <label style="color:var(--text-secondary); font-size:0.8rem;">Time (min)</label>
-                        <input type="number" id="newQuizTime" class="input-style" value="20">
-                    </div>
-                </div>
-
-                <div style="border-top: 1px solid var(--glass-border); padding-top: 20px; margin-bottom: 20px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
-                        <h4 style="font-size:1.1rem;">Questions List</h4>
-                        <button class="btn" style="width: auto; padding: 6px 15px; font-size: 0.8rem; background: rgba(0,245,255,0.1); color: var(--cyan); border: 1px solid var(--cyan);" onclick="App.addQuestionEntry()">+ Add Question</button>
-                    </div>
-                    <div id="questionsContainer" style="display:grid; gap:15px;">
-                        ${this.renderQuestionEditor([{ text: '', options: ['', '', '', ''], correct: 0 }])}
-                    </div>
-                </div>
-
-                <div style="display: flex; gap: 12px; justify-content: flex-end; border-top: 1px solid var(--glass-border); padding-top: 20px;">
-                    <button class="btn" style="background: rgba(255,255,255,0.1); color: white; width: auto; padding: 12px 25px;" onclick="App.closeQuizModal()">Cancel</button>
-                    <button class="btn btn-primary" style="width: auto; padding: 12px 25px;" onclick="App.submitCreateQuiz()">Create Quiz</button>
-                </div>
-            </div>`;
-        document.body.appendChild(modal);
+        // TODO: Implement with API call to POST /api/quizzes
+        this.showToast('Quiz creation requires API integration with POST /api/quizzes', 'info');
     },
 
     renderQuestionEditor(questions) {
@@ -1223,37 +1104,16 @@ const App = {
 
         if (!title) return this.showToast('Please enter a title', 'error');
 
-        CrisisData.quizzes[index].title = title;
-        CrisisData.quizzes[index].questionsList = questionsList;
-        CrisisData.quizzes[index].questions = questionsList.length;
-        CrisisData.quizzes[index].timeLimit = timeLimit;
-
-        this.closeQuizModal();
-        this.showToast('Quiz updated successfully', 'success');
-        this.render();
+        // TODO: Implement with API call to PATCH /api/quizzes/{id}
+        this.showToast('Quiz update requires API integration with PATCH /api/quizzes/{id}', 'info');
     },
 
     submitCreateQuiz() {
         const title = document.getElementById('newQuizTitle').value.trim();
-        const questionsList = this.scrapeQuestions();
-        const timeLimit = parseInt(document.getElementById('newQuizTime').value);
-
         if (!title) return this.showToast('Please enter a title', 'error');
 
-        CrisisData.quizzes.push({
-            title,
-            averageScore: "N/A",
-            studentScore: null,
-            status: "Not Attempted",
-            questions: questionsList.length,
-            questionsList: questionsList,
-            timeLimit
-        });
-
-        CrisisData.statistics.teacher.activeQuizzes = CrisisData.quizzes.length;
-        this.closeQuizModal();
-        this.showToast('Quiz created successfully', 'success');
-        this.render();
+        // TODO: Implement with API call to POST /api/quizzes
+        this.showToast('Quiz creation requires API integration with POST /api/quizzes', 'info');
     },
 
     closeQuizModal() {
@@ -1262,15 +1122,13 @@ const App = {
     },
 
     viewDrillDetails(index) {
-        const drill = CrisisData.drills[index];
-        this.showToast(`Analytics: participation has increased by 5% for ${drill.title}`, 'success');
+        // TODO: Implement with API call to GET /api/drills/{id}/details
+        this.showToast('Drill details require API integration with GET /api/drills/{id}/details', 'info');
     },
 
     sendDrillReminder(index) {
-        const drill = CrisisData.drills[index];
-        const msg = `REMINDER: "${drill.title}" is scheduled for ${drill.date}. Please ensure you are prepared.`;
-        this.sendAlert(msg);
-        this.showToast(`Batch notification sent to ${CrisisData.statistics.teacher.studentsAssigned} students for "${drill.title}"`, 'success');
+        // TODO: Implement with API call to POST /api/drills/{id}/send-reminder
+        this.showToast('Drill reminder requires API integration with POST /api/drills/{id}/send-reminder', 'info');
     },
 
     // --- STUDENT VIEWS ---
@@ -1337,120 +1195,115 @@ const App = {
                     </div>
                 </div>`;
         }
-        }
 
         if (section === 'Virtual Drills') {
+            // TODO: Replace with API call to GET /api/drills
             return `
                 <div class="glass" style="padding: 40px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
                         <div>
                             <h3 style="margin-bottom:5px;">Virtual Drills</h3>
-                            <p style="color:var(--text-secondary); font-size:0.85rem;">Practice your response in simulated emergency scenarios</p>
+                            <p style="color:var(--text-secondary); font-size:0.85rem;">Loading drills from API...</p>
                         </div>
                     </div>
-                    <div style="display:grid; gap:15px;">
-                        ${CrisisData.drills.map((d, i) => {
-                const isUpcoming = d.status === 'Registered';
-                return `
-                                <div class="glass" style="padding:22px 30px; border:1px solid ${isUpcoming ? 'rgba(0,245,255,0.2)' : 'rgba(255,255,255,0.05)'}; display:flex; align-items:center; justify-content:space-between;">
-                                    <div style="display:flex; align-items:center; gap:20px;">
-                                        <div style="width:50px; height:50px; border-radius:50%; background:${isUpcoming ? 'rgba(0,245,255,0.1)' : 'rgba(255,255,255,0.03)'}; display:flex; align-items:center; justify-content:center;">
-                                            <i class="fas ${isUpcoming ? 'fa-vr-cardboard' : 'fa-history'}" style="color:${isUpcoming ? 'var(--cyan)' : 'var(--text-secondary)'};"></i>
-                                        </div>
-                                        <div>
-                                            <h4 style="margin-bottom:4px;">${d.title}</h4>
-                                            <p style="font-size:0.85rem; color:${isUpcoming ? 'var(--cyan)' : 'var(--text-secondary)'};">
-                                                <i class="fas fa-calendar-alt" style="margin-right:6px;"></i>${d.scheduled_date} ${isUpcoming ? '• UPCOMING' : '• COMPLETED'}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div style="display:flex; align-items:center; gap:25px;">
-                                        ${!isUpcoming ? `<div style="text-align:right;"><p style="font-size:0.75rem; color:var(--text-secondary);">Score</p><p style="font-weight:700; color:#22c55e;">${d.score}%</p></div>` : ''}
-                                        <button class="btn ${isUpcoming ? 'btn-primary' : ''}" style="width:auto; padding:10px 25px; font-size:0.85rem; background:${!isUpcoming ? 'rgba(255,255,255,0.05)' : ''};" onclick="App.interactDrill(${i})">
-                                            ${isUpcoming ? 'Join Simulation' : 'Review Performance'}
-                                        </button>
-                                    </div>
-                                </div>`;
-            }).join('')}
+                    <div style="text-align: center; padding: 40px;">
+                        <i class="fas fa-code" style="font-size: 2rem; color: var(--text-secondary); opacity: 0.5; margin-bottom: 15px; display: block;"></i>
+                        <p style="color: var(--text-secondary); font-size: 0.85rem;">
+                            Requires: GET /api/drills
+                        </p>
                     </div>
                 </div>`;
         }
 
         if (section === 'Quizzes') {
+            // TODO: Replace with API call to GET /api/quizzes
             return `
                 <div class="glass" style="padding: 40px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
                         <div>
                             <h3 style="margin-bottom:5px;">Knowledge Assessments</h3>
-                            <p style="color:var(--text-secondary); font-size:0.85rem;">Test your knowledge and earn points</p>
+                            <p style="color:var(--text-secondary); font-size:0.85rem;">Loading quizzes from API...</p>
                         </div>
                     </div>
-                    <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap:20px;">
-                        ${CrisisData.quizzes.map((q, i) => {
-                const isDone = q.studentScore !== null;
-                return `
-                                <div class="glass glass-card" style="padding:25px; border:1px solid ${isDone ? 'rgba(139,92,246,0.2)' : 'rgba(0,245,255,0.15)'};">
-                                    <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
-                                        <div style="width:40px; height:40px; border-radius:10px; background:rgba(139,92,246,0.1); display:flex; align-items:center; justify-content:center;">
-                                            <i class="fas fa-pen-nib" style="color:var(--purple);"></i>
-                                        </div>
-                                        <span style="font-size:0.75rem; font-weight:700; color:${isDone ? 'var(--purple)' : 'var(--cyan)'}; background:${isDone ? 'rgba(139,92,246,0.1)' : 'rgba(0,245,255,0.1)'}; padding:4px 10px; border-radius:8px;">
-                                            ${isDone ? 'SCORE: ' + q.studentScore : 'OPEN'}
-                                        </span>
-                                    </div>
-                                    <h4 style="margin-bottom:15px; min-height:48px;">${q.title}</h4>
-                                    <div style="display:flex; gap:15px; font-size:0.8rem; color:var(--text-secondary); margin-bottom:20px;">
-                                        <span><i class="fas fa-clock" style="margin-right:5px;"></i>${q.timeLimit} min</span>
-                                        <span><i class="fas fa-list" style="margin-right:5px;"></i>${q.questions} Questions</span>
-                                    </div>
-                                    <button class="btn ${isDone ? '' : 'btn-primary'}" style="width:100%; padding:10px; background:${isDone ? 'rgba(255,255,255,0.05)' : ''};" onclick="App.showTakeQuizModal(${i})">
-                                        ${isDone ? 'Retake Quiz' : 'Start Assessment'}
-                                    </button>
-                                </div>`;
-            }).join('')}
+                    <div style="text-align: center; padding: 40px;">
+                        <i class="fas fa-code" style="font-size: 2rem; color: var(--text-secondary); opacity: 0.5; margin-bottom: 15px; display: block;"></i>
+                        <p style="color: var(--text-secondary); font-size: 0.85rem;">
+                            Requires: GET /api/quizzes
+                        </p>
                     </div>
                 </div>`;
         }
 
         if (section === 'Achievements') {
-            const modsDone = CrisisData.modules.filter(m => m.studentProgress === 100).length;
-            const topScore = CrisisData.quizzes.some(q => q.studentScore && q.studentScore.startsWith(q.questions.toString()));
-            const drlDone = CrisisData.drills.filter(d => d.status === 'Completed').length;
-
+            // TODO: Replace with API call to GET /api/student/achievements
             return `<div class="glass" style="padding: 40px;">
                 <h3>Achievements & Badges</h3>
-                <p style="color: var(--text-secondary); margin-bottom: 30px;">Earn badges by completing modules, scoring high in quizzes, and participating in drills.</p>
-                <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:20px;">
-                    <div class="glass" style="padding:25px; text-align:center; border: 1px solid ${modsDone >= 5 ? 'rgba(0, 245, 255, 0.4)' : 'rgba(255,255,255,0.05)'}; background: ${modsDone >= 5 ? 'rgba(0, 245, 255, 0.05)' : 'transparent'}; opacity: ${modsDone >= 5 ? '1' : '0.5'};">
-                        <i class="fas fa-shield-alt" style="font-size:2.8rem; color:${modsDone >= 5 ? 'var(--cyan)' : 'var(--text-secondary)'}; margin-bottom:15px;"></i>
-                        <h4 style="margin-bottom:8px;">Safety Star</h4>
-                        <span style="font-size:0.75rem; color: ${modsDone >= 5 ? '#22c55e' : 'var(--text-secondary)'}; background: rgba(255,255,255,0.05); padding: 4px 10px; border-radius: 12px;">${modsDone >= 5 ? 'EARNED' : 'LOCKED'}</span>
-                        <p style="font-size:0.8rem; color:var(--text-secondary); margin-top:12px;">Requirement: Complete all 5 Learning Modules (${modsDone}/5)</p>
-                    </div>
-                    <div class="glass" style="padding:25px; text-align:center; border: 1px solid ${topScore ? 'rgba(139, 92, 246, 0.4)' : 'rgba(255,255,255,0.05)'}; background: ${topScore ? 'rgba(139, 92, 246, 0.05)' : 'transparent'}; opacity: ${topScore ? '1' : '0.5'};">
-                        <i class="fas fa-fire-extinguisher" style="font-size:2.8rem; color:${topScore ? 'var(--purple)' : 'var(--text-secondary)'}; margin-bottom:15px;"></i>
-                        <h4 style="margin-bottom:8px;">Ace Responder</h4>
-                        <span style="font-size:0.75rem; color: ${topScore ? '#22c55e' : 'var(--text-secondary)'}; background: rgba(255,255,255,0.05); padding: 4px 10px; border-radius: 12px;">${topScore ? 'EARNED' : 'LOCKED'}</span>
-                        <p style="font-size:0.8rem; color:var(--text-secondary); margin-top:12px;">Requirement: Score 100% in any Quiz</p>
-                    </div>
-                    <div class="glass" style="padding:25px; text-align:center; border: 1px solid ${drlDone >= 1 ? 'rgba(34, 197, 94, 0.4)' : 'rgba(255,255,255,0.05)'}; background: ${drlDone >= 1 ? 'rgba(34, 197, 94, 0.05)' : 'transparent'}; opacity: ${drlDone >= 1 ? '1' : '0.5'};">
-                        <i class="fas fa-heartbeat" style="font-size:2.8rem; color:${drlDone >= 1 ? '#22c55e' : 'var(--text-secondary)'}; margin-bottom:15px;"></i>
-                        <h4 style="margin-bottom:8px;">Drill Pro</h4>
-                        <span style="font-size:0.75rem; color: ${drlDone >= 1 ? '#22c55e' : 'var(--text-secondary)'}; background: rgba(255,255,255,0.05); padding: 4px 10px; border-radius: 12px;">${drlDone >= 1 ? 'EARNED' : 'LOCKED'}</span>
-                        <p style="font-size:0.8rem; color:var(--text-secondary); margin-top:12px;">Requirement: Complete a Virtual Drill (${drlDone} done)</p>
-                    </div>
+                <p style="color: var(--text-secondary); margin-bottom: 30px;">Loading achievements from API...</p>
+                <div style="text-align: center; padding: 40px;">
+                    <i class="fas fa-code" style="font-size: 2rem; color: var(--text-secondary); opacity: 0.5; margin-bottom: 15px; display: block;"></i>
+                    <p style="color: var(--text-secondary); font-size: 0.85rem;">
+                        Requires: GET /api/student/achievements
+                    </p>
                 </div>
             </div>`;
         }
 
-        if (section === 'Leaderboard') return `<div class="glass" style="padding: 40px;"><h3>Leaderboard</h3><div style="margin-top:20px;">${CrisisData.leaderboard.map((u, i) => `<div style="display:flex; justify-content:space-between; padding:15px 20px; background:${u.isUser ? 'rgba(0, 245, 255, 0.1)' : 'rgba(255,255,255,0.02)'}; border-radius:12px; margin-bottom:8px; border:${u.isUser ? '1px solid var(--cyan)' : '1px solid transparent'};"><span style="font-size:1.1rem; color:${i < 3 ? 'var(--cyan)' : 'inherit'};"><strong style="display:inline-block; width:30px;">#${i + 1}</strong> ${u.name}</span><span style="font-weight:bold; color:var(--cyan);">${u.score} pts</span></div>`).join('')}</div></div>`;
+        if (section === 'Leaderboard') {
+            // Sample leaderboard data
+            const leaderboard = [
+                { rank: 1, name: "Kavya Menon", points: 2450, institution: "CrisisCraft Academy", badge: "🏆" },
+                { rank: 2, name: "Rohan Gupta", points: 2380, institution: "CrisisCraft Academy", badge: "🥈" },
+                { rank: 3, name: "Alex Chen", points: 2320, institution: "CrisisCraft Academy", badge: "🥉" },
+                { rank: 4, name: "Maya Rodriguez", points: 2280, institution: "CrisisCraft Academy", badge: "⭐" },
+                { rank: 5, name: "Elena Petrova", points: 2250, institution: "CrisisCraft Academy", badge: "⭐" },
+                { rank: 6, name: "David Kim", points: 2200, institution: "CrisisCraft Academy", badge: "⭐" },
+                { rank: 7, name: "Sarah Johnson", points: 2150, institution: "CrisisCraft Academy", badge: "⭐" },
+                { rank: 8, name: "Michael Brown", points: 2100, institution: "CrisisCraft Academy", badge: "⭐" }
+            ];
+
+            return `
+                <div class="glass" style="padding: 40px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                        <div>
+                            <h3 style="margin-bottom: 5px;">Global Leaderboard</h3>
+                            <p style="color: var(--text-secondary); font-size: 0.85rem;">Top performers in CrisisCraft</p>
+                        </div>
+                        <div style="text-align: right;">
+                            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 4px;">YOUR RANK</p>
+                            <p style="font-weight: 700; color: var(--cyan); font-size: 1.2rem;">#4</p>
+                        </div>
+                    </div>
+                    <div style="display: grid; gap: 15px;">
+                        ${leaderboard.map(entry => `
+                            <div class="glass glass-card" style="padding: 20px; display: flex; align-items: center; justify-content: space-between; ${entry.rank <= 3 ? 'border: 1px solid rgba(0,245,255,0.3); background: rgba(0,245,255,0.05);' : ''}">
+                                <div style="display: flex; align-items: center; gap: 15px;">
+                                    <div style="width: 40px; height: 40px; border-radius: 50%; background: ${entry.rank === 1 ? 'linear-gradient(45deg, #FFD700, #FFA500)' : entry.rank === 2 ? 'linear-gradient(45deg, #C0C0C0, #A8A8A8)' : entry.rank === 3 ? 'linear-gradient(45deg, #CD7F32, #A0522D)' : 'rgba(0,245,255,0.1)'}; display: flex; align-items: center; justify-content: center; font-weight: 700; color: ${entry.rank <= 3 ? 'black' : 'var(--cyan)'};">
+                                        ${entry.rank}
+                                    </div>
+                                    <div>
+                                        <div style="display: flex; align-items: center; gap: 10px;">
+                                            <span style="font-weight: 600; color: white;">${entry.name}</span>
+                                            <span style="font-size: 1.2rem;">${entry.badge}</span>
+                                        </div>
+                                        <p style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 2px;">${entry.institution}</p>
+                                    </div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <p style="font-weight: 700; color: var(--cyan); font-size: 1.1rem;">${entry.points.toLocaleString()}</p>
+                                    <p style="color: var(--text-secondary); font-size: 0.8rem;">points</p>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
         return `<h2>${section}</h2>`;
     },
 
     getStudentOverview() {
-        const stats = CrisisData.statistics.student;
-        const student = CrisisData.users.find(u => u.role === 'Student' && u.user_id === 'U003');
-        const inst = CrisisData.institutions.find(i => i.i_id === student.i_id);
+        // TODO: Replace with API call to GET /api/student/profile and GET /api/student/stats
+        const userName = localStorage.getItem('crisis_craft_user') || 'Student';
         return `
             <div class="glass" style="padding: 20px; margin-bottom: 30px; display: flex; align-items: center; justify-content: space-between; border-left: 4px solid var(--cyan);">
                  <div style="display: flex; align-items: center; gap: 20px;">
@@ -1458,48 +1311,46 @@ const App = {
                         <i class="fas fa-university"></i>
                     </div>
                     <div>
-                        <h4 style="font-size: 1.1rem; margin-bottom: 4px;">${inst.i_name}</h4>
+                        <h4 style="font-size: 1.1rem; margin-bottom: 4px;">CrisisCraft Academy</h4>
                         <p style="color: var(--text-secondary); font-size: 0.9rem;">
-                            <i class="fas fa-map-marker-alt" style="margin-right: 8px;"></i>${inst.location.city}, ${inst.location.state}
+                            <i class="fas fa-map-marker-alt" style="margin-right: 8px;"></i>Grade 10A - Emergency Response
                         </p>
                     </div>
                  </div>
                  <div style="text-align: right;">
                     <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 4px;">ENROLLED SINCE</p>
-                    <p style="font-weight: 700; color: var(--cyan);">SEPT 2025</p>
+                    <p style="font-weight: 700; color: var(--cyan);">Jan 2024</p>
                  </div>
             </div>
             <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px;">
-                ${this.renderStatCard("Modules Done", stats.modulesCompleted + "/" + stats.totalModules, "fa-check-circle", "var(--cyan)")}
-                ${this.renderStatCard("Next Drill", stats.upcomingDrillDate, "fa-calendar-alt", "var(--indigo)")}
-                ${this.renderStatCard("Quiz Average", stats.averageQuizScore + "%", "fa-pen-alt", "var(--purple)")}
-                ${this.renderStatCard("Total Points", stats.totalPoints, "fa-fire", "var(--cyan)")}
+                ${this.renderStatCard("Modules Done", "8", "fa-check-circle", "var(--cyan)")}
+                ${this.renderStatCard("Next Drill", "Tomorrow", "fa-calendar-alt", "var(--indigo)")}
+                ${this.renderStatCard("Quiz Average", "87%", "fa-pen-alt", "var(--purple)")}
+                ${this.renderStatCard("Total Points", "2280", "fa-fire", "var(--cyan)")}
             </div>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:25px;">
                 <div class="glass" style="padding: 30px;">
                     <h3>Progress</h3>
-                    ${CrisisData.modules.slice(0, 2).map(m => `<div style="margin-top:15px;"><span>${m.title}</span><div style="width:100%; height:6px; background:rgba(255,255,255,0.05); border-radius:3px; margin-top:5px; overflow:hidden;"><div style="width:${m.studentProgress}%; height:100%; background:var(--indigo);"></div></div></div>`).join('')}
+                    <div style="text-align: center; padding: 20px; color: var(--text-secondary);">
+                        <i class="fas fa-code" style="margin-right: 8px;"></i>
+                        Requires: GET /api/student/progress
+                    </div>
                 </div>
                 <div class="glass" style="padding: 30px; background: linear-gradient(135deg, rgba(0, 245, 255, 0.05), transparent);">
                     <h3>Next Virtual Drill</h3>
-                    <p style="margin-top: 15px; color: var(--text-secondary);">${CrisisData.drills.find(d => d.status === 'Registered')?.title || 'No upcoming drills'}</p>
-                    <p style="color: var(--cyan); font-size:0.9rem; margin-top:5px;">${CrisisData.drills.find(d => d.status === 'Registered')?.scheduled_date || ''}</p>
-                    <div id="drill-countdown" style="font-size: 1.5rem; font-weight: 700; color: var(--cyan); margin-top:10px;">--:--:--</div>
-                    <button class="btn btn-primary" style="width: auto; padding: 10px 30px; margin-top: 20px;" onclick="App.interactDrill(App.findNextDrillIndex())">Enter</button>
+                    <p style="margin-top: 15px; color: var(--text-secondary);">Emergency Evacuation Drill</p>
+                    <p style="color: var(--cyan); font-size:0.9rem; margin-top:5px;">Tomorrow at 10:00 AM</p>
+                    <div id="drill-countdown" style="font-size: 1.5rem; font-weight: 700; color: var(--cyan); margin-top:10px;">23:45:12</div>
+                    <button class="btn btn-primary" style="width: auto; padding: 10px 30px; margin-top: 20px;" onclick="App.showToast('Requires: GET /api/drills/next', 'info')">Enter</button>
                 </div>
             </div>
         `;
     },
 
     removeUser(index) {
-        if (CrisisData.users[index].role === 'Admin') {
-            this.showToast('Admins cannot be removed for security.', 'error');
-            return;
-        }
+        // TODO: Implement with API call to DELETE /api/admin/users/{id}
         if (confirm('Are you sure you want to remove this user?')) {
-            CrisisData.users.splice(index, 1);
-            this.saveState();
-            this.render();
+            this.showToast('User deletion requires API integration with DELETE /api/admin/users/{id}', 'info');
         }
     },
 
@@ -1548,25 +1399,15 @@ const App = {
             nameInput.style.border = '1px solid var(--red)';
             return;
         }
-        CrisisData.users.push({
-            user_id: "U" + (CrisisData.users.length + 1).toString().padStart(3, '0'),
-            u_name: { fname: name.split(' ')[0], mname: "", lname: name.split(' ')[1] || "" },
-            role: roleInput.value,
-            status: 'Active',
-            i_id: CrisisData.institutions[0].i_id,
-            score: 0,
-            password: 'password123'
-        });
+        // TODO: Implement with API call to POST /api/admin/users
+        this.showToast('User creation requires API integration with POST /api/admin/users', 'info');
         this.closeAddUserModal();
-        this.saveState();
-        this.render();
     },
 
     removeDrill(index) {
+        // TODO: Implement with API call to DELETE /api/drills/{id}
         if (confirm('Are you sure you want to delete this virtual drill?')) {
-            CrisisData.drills.splice(index, 1);
-            this.saveState();
-            this.render();
+            this.showToast('Drill deletion requires API integration with DELETE /api/drills/{id}', 'info');
         }
     },
 
@@ -1614,16 +1455,9 @@ const App = {
             titleInput.style.border = '1px solid var(--red)';
             return;
         }
-        CrisisData.drills.push({
-            title: title,
-            participation: 0,
-            score: 0,
-            status: 'Registered',
-            date: date || 'TBD'
-        });
+        // TODO: Implement with API call to POST /api/drills
+        this.showToast('Drill creation requires API integration with POST /api/drills', 'info');
         this.closeAddDrillModal();
-        this.saveState();
-        this.render();
     },
 
     initCharts() {
@@ -1732,35 +1566,8 @@ const App = {
                 return;
             }
 
-            const nextDrill = CrisisData.drills.find(d => d.status === 'Registered');
-            if (!nextDrill) {
-                timerEl.textContent = "No Drills";
-                return;
-            }
-
-            // Parse date "15 April 2026"
-            const drillDate = new Date(nextDrill.scheduled_date + " 09:00:00"); // Assuming 9 AM start
-            const now = new Date();
-            const diff = drillDate - now;
-
-            if (diff <= 0) {
-                timerEl.textContent = "00:00:00";
-                clearInterval(this.countdownInterval);
-                return;
-            }
-
-            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-            const secs = Math.floor((diff % (1000 * 60)) / 1000);
-
-            const parts = [];
-            if (days > 0) parts.push(`${days} Days`);
-            parts.push(hours.toString().padStart(2, '0'));
-            parts.push(mins.toString().padStart(2, '0'));
-            parts.push(secs.toString().padStart(2, '0'));
-
-            timerEl.textContent = parts.join(':');
+            // TODO: Get next drill from API GET /api/drills/next
+            timerEl.textContent = "--:--:--";
         };
 
         updateTimer();
@@ -1768,27 +1575,21 @@ const App = {
     },
 
     // --- Student Interaction Methods ---
-    startModule(index) {
-        const mod = CrisisData.modules[index];
-        this.showModuleViewer(index);
-
-        if (mod.studentProgress < 100) {
-            mod.studentProgress = Math.min(100, mod.studentProgress + 25);
-            if (mod.studentProgress === 100) mod.status = 'Completed';
-            else mod.status = 'In Progress';
-            this.saveState();
-            // We update state but don't re-render entire page to keep the modal open
-        }
+    startModule(moduleId) {
+        // TODO: Implement with API call to POST /api/modules/{id}/progress
+        this.showModuleViewer(moduleId);
     },
 
-    showModuleViewer(index) {
+    showModuleViewer(moduleId) {
         const modules = this.state.uploadedModules || [];
-        const mod = modules[index];
+        const mod = modules.find(m => m._id === moduleId);
         
         if (!mod) {
             this.showToast('Module not found', 'error');
             return;
         }
+        
+        const modal = document.createElement('div');
         modal.id = 'moduleViewerModal';
         modal.style.cssText = `position:fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(10px); z-index:2500; display:flex; justify-content:center; align-items:center; padding:20px;`;
 
@@ -1825,100 +1626,19 @@ const App = {
     },
 
     interactDrill(index) {
-        if (index === -1) {
-            this.showToast('No drills available right now.', 'info');
-            return;
-        }
-        const drill = CrisisData.drills[index];
-        if (drill.status === 'Registered') {
-            this.showDrillSimulator(index);
-        } else {
-            this.showDrillReport(index);
-        }
+        // TODO: Implement with API call to GET /api/drills/{id} or POST /api/drills/{id}/simulate
+        this.showToast('Drill interaction requires API integration', 'info');
     },
 
     findNextDrillIndex() {
-        return CrisisData.drills.findIndex(d => d.status === 'Registered');
-    },
-
-    showDrillSimulator(index) {
-        const drill = CrisisData.drills[index];
-        const modal = document.createElement('div');
-        modal.id = 'drillSimulatorModal';
-        modal.style.cssText = `position:fixed; inset:0; background:rgba(0,0,0,0.9); backdrop-filter:blur(20px); z-index:3000; display:flex; justify-content:center; align-items:center; padding:20px;`;
-
-        let step = 1;
-        const totalSteps = 3;
-
-        const renderStep = (s) => {
-            let stepHtml = '';
-            if (s === 1) {
-                stepHtml = `
-                    <p style="font-size:1.2rem; margin-bottom:30px;">A sudden <strong>${drill.title}</strong> alert has been triggered. The alarms are blaring. What is your first reaction?</p>
-                    <div style="display:grid; gap:15px;">
-                        <button class="btn" style="background:rgba(255,255,255,0.05); text-align:left; padding:20px;" onclick="App.nextDrillStep(2, true)">
-                            <span style="color:var(--cyan); font-weight:700; margin-right:15px;">A</span> Stay calm, identify the nearest exit route.
-                        </button>
-                        <button class="btn" style="background:rgba(255,255,255,0.05); text-align:left; padding:20px;" onclick="App.nextDrillStep(2, false)">
-                            <span style="color:var(--cyan); font-weight:700; margin-right:15px;">B</span> Panicked, run towards the main lobby immediately.
-                        </button>
-                    </div>`;
-            } else if (s === 2) {
-                stepHtml = `
-                    <p style="font-size:1.2rem; margin-bottom:30px;">You are at the stairwell exit. Smoke is visible at the bottom. What should you do?</p>
-                    <div style="display:grid; gap:15px;">
-                        <button class="btn" style="background:rgba(255,255,255,0.05); text-align:left; padding:20px;" onclick="App.nextDrillStep(3, true)">
-                            <span style="color:var(--cyan); font-weight:700; margin-right:15px;">A</span> Cover your nose/mouth, stay low, and proceed carefully.
-                        </button>
-                        <button class="btn" style="background:rgba(255,255,255,0.05); text-align:left; padding:20px;" onclick="App.nextDrillStep(3, false)">
-                            <span style="color:var(--cyan); font-weight:700; margin-right:15px;">B</span> Take the elevator instead to avoid the smoke.
-                        </button>
-                    </div>`;
-            } else {
-                stepHtml = `
-                    <div style="text-align:center; padding:20px;">
-                        <i class="fas fa-check-circle" style="font-size:4rem; color:#22c55e; margin-bottom:20px;"></i>
-                        <h2 style="margin-bottom:15px;">Simulation Complete!</h2>
-                        <p style="color:var(--text-secondary); margin-bottom:30px;">You have successfully navigated the ${drill.title}. Your performance data is being processed.</p>
-                        <button class="btn btn-primary" style="width:auto; padding:12px 40px;" onclick="App.completeDrillSimulation(${index})">Finish Drill</button>
-                    </div>`;
-            }
-
-            modal.innerHTML = `
-                <div class="glass" style="width:650px; padding:50px; border:2px solid var(--cyan);">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:40px;">
-                        <h3 style="color:var(--cyan);">${drill.title} Simulation</h3>
-                        <span style="font-size:0.9rem; color:var(--text-secondary);">Step ${s} / ${totalSteps}</span>
-                    </div>
-                    <div style="width:100%; height:8px; background:rgba(255,255,255,0.1); border-radius:4px; margin-bottom:40px; overflow:hidden;">
-                        <div style="width:${(s / totalSteps) * 100}%; height:100%; background:var(--cyan); transition:0.5s;"></div>
-                    </div>
-                    <div id="drillStepContent">${stepHtml}</div>
-                </div>`;
-        };
-
-        this.nextDrillStep = (s, correct) => {
-            if (!correct) this.showToast('Incorrect action! Safety logic suggests otherwise, but continuing simulator...', 'warning');
-            else this.showToast('Good decision!', 'success');
-            renderStep(s);
-        };
-
-        this.completeDrillSimulation = (idx) => {
-            const d = CrisisData.drills[idx];
-            d.status = 'Completed';
-            d.score = 95; // Default winning score for simulator
-            this.showToast('Drill data saved. View your report in the history section.', 'success');
-            document.getElementById('drillSimulatorModal').remove();
-            this.saveState();
-            this.render();
-        };
-
-        document.body.appendChild(modal);
-        renderStep(1);
+        // TODO: Get next drill from API GET /api/drills/next
+        return -1;
     },
 
     showDrillReport(index) {
-        const drill = CrisisData.drills[index];
+        // TODO: Implement with API call to GET /api/drills/{id}/report
+        this.showToast('Drill report requires API integration', 'info');
+        return;
         const modal = document.createElement('div');
         modal.id = 'drillReportModal';
         modal.style.cssText = `position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(10px); z-index:2500; display:flex; justify-content:center; align-items:center; padding:20px;`;
@@ -1954,7 +1674,9 @@ const App = {
     },
 
     showTakeQuizModal(index) {
-        const quiz = CrisisData.quizzes[index];
+        // TODO: Implement with API call to GET /api/quizzes/{id}
+        this.showToast('Quiz taking requires API integration', 'info');
+        return;
         const modal = document.createElement('div');
         modal.id = 'takeQuizModal';
         modal.className = 'glass';
@@ -1994,33 +1716,8 @@ const App = {
     },
 
     submitStudentQuiz(index) {
-        const quiz = CrisisData.quizzes[index];
-        const questions = quiz.questionsList || [];
-        let score = 0;
-
-        questions.forEach((q, qIdx) => {
-            const selected = document.querySelector(`input[name="student_q_${qIdx}"]:checked`);
-            if (selected && parseInt(selected.value) === q.correct) {
-                score++;
-            }
-        });
-
-        const finalScoreLabel = `${score}/${questions.length}`;
-        quiz.studentScore = finalScoreLabel;
-        quiz.status = 'Completed';
-
-        // Update global stats
-        const allStudentScores = CrisisData.quizzes.filter(q => q.studentScore).map(q => {
-            const parts = q.studentScore.split('/');
-            return (parseInt(parts[0]) / parseInt(parts[1])) * 100;
-        });
-
-        if (allStudentScores.length > 0) {
-            CrisisData.statistics.student.averageQuizScore = Math.round(allStudentScores.reduce((a, b) => a + b, 0) / allStudentScores.length);
-        }
-
-        CrisisData.statistics.student.totalPoints += (score * 10);
-
+        // TODO: Implement with API call to POST /api/quizzes/{id}/submit
+        this.showToast('Quiz submission requires API integration', 'info');
         document.getElementById('takeQuizModal').remove();
         this.showToast(`Quiz Submitted! You scored ${finalScoreLabel}`, 'success');
         this.saveState();
