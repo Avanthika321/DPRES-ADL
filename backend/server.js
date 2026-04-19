@@ -55,6 +55,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/modules', require('./routes/moduleRoutes'));
 app.use('/api/quizzes', require('./routes/quizRoutes'));
+app.use('/api/drills', require('./routes/drillRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 
 // ========================
