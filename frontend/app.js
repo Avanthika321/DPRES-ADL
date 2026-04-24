@@ -1,5 +1,22 @@
+const mockModules = [
+  {
+    id: 1,
+    title: "Introduction to DBMS",
+    description: "Learn basics of DBMS",
+    content: "DBMS is software that manages data efficiently.",
+    completed: false
+  },
+  {
+    id: 2,
+    title: "Normalization",
+    description: "Remove redundancy",
+    content: "Normalization organizes data to reduce redundancy.",
+    completed: false
+  }
+];
 const App = {
     state: {
+        modules: mockModules,
         role: null,
         activeSection: 'Dashboard',
         isLoggedIn: false,
@@ -317,14 +334,7 @@ const App = {
                 { icon: 'fa-user-graduate', label: 'Student Performance' },
                 { icon: 'fa-running', label: 'Drill Participation' }
             ],
-            student: [
-                { icon: 'fa-home', label: 'Dashboard' },
-                { icon: 'fa-book-open', label: 'Learning Modules' },
-                { icon: 'fa-vr-cardboard', label: 'Virtual Drills' },
-                { icon: 'fa-pen-nib', label: 'Quizzes' },
-                { icon: 'fa-trophy', label: 'Achievements' },
-                { icon: 'fa-list-ol', label: 'Leaderboard' }
-            ]
+          
         };
 
         const activeRole = this.state.role;
@@ -1136,7 +1146,7 @@ const App = {
         if (section === 'Dashboard') return this.getStudentOverview();
 
         if (section === 'Learning Modules') {
-            const modules = this.state.uploadedModules || [];
+            const modules = this.state.modules || [];
             const isLoading = this.state.isLoadingModules;
 
             // Loading state
@@ -1187,9 +1197,12 @@ const App = {
                                     <i class="fas fa-user" style="margin-right: 5px;"></i>
                                     By: ${m.createdBy?.name || 'Teacher'}
                                 </p>
-                                <button class="btn btn-primary" style="width:100%; padding:10px; font-size:0.85rem;" onclick="App.startModule('${m._id}')">
-                                    View Module
-                                </button>
+                                <button onclick="viewModule(${m.id || m._id})"
+    style="margin-top:10px; padding:8px 12px; border:none; border-radius:6px; cursor:pointer;">
+    
+    ${m.completed ? "View Again" : "View Module"}
+</button>
+                                 
                             </div>
                         `).join('')}
                     </div>
@@ -1727,3 +1740,13 @@ const App = {
 };
 
 document.addEventListener('DOMContentLoaded', () => App.init());
+function viewModule(id) {
+  const module = App.state.modules.find(m => (m.id || m._id) === id);
+
+  const done = confirm(module.content + "\n\nMark as completed?");
+
+  if (done) {
+    module.completed = true;
+    App.render();
+  }
+}
