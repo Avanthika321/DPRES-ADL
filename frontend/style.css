@@ -79,14 +79,159 @@ h3 {
     padding-left: 10px;
 }
 
+/* Sidebar States */
+.sidebar.compact {
+    width: 90px;
+    padding: 30px 15px;
+}
+
+.sidebar.compact .logo-text,
+.sidebar.compact nav span,
+.sidebar.compact .logout-text {
+    display: none;
+}
+
+.sidebar.compact .nav-item {
+    justify-content: center;
+    padding: 15px 0;
+}
+
+.sidebar.compact .nav-item i {
+    width: auto !important;
+    font-size: 1.2rem;
+}
+
+/* UI Animations Toggle */
+.disable-animations *,
+.disable-animations *:before,
+.disable-animations *:after {
+    transition: none !important;
+    animation: none !important;
+}
+
+/* Base Transitions for UI Elements */
+.nav-item, 
+.btn, 
+.input-style, 
+.glass,
+.glass-card,
+#dashboard-content,
+.modal-content,
+aside,
+main {
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Premium Entry Animation */
+@keyframes premiumEntry {
+    0% { 
+        opacity: 0; 
+        transform: translateY(30px) scale(0.98);
+        filter: blur(8px);
+    }
+    100% { 
+        opacity: 1; 
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+    }
+}
+
+@keyframes smoothZoom {
+    0% { 
+        opacity: 0; 
+        transform: scale(0.97) translateY(10px);
+        filter: blur(5px);
+    }
+    100% { 
+        opacity: 1; 
+        transform: scale(1) translateY(0);
+        filter: blur(0);
+    }
+}
+
+.smooth-entry {
+    animation: smoothZoom 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+#dashboard-content > div {
+    /* Container is static; motion is handled by the smooth-entry class */
+    opacity: 1;
+}
+
+/* Staggered Entry disabled to prevent double-transforms */
+.stagger-container > * {
+    opacity: 1;
+    animation: none !important;
+}
+
+/* Interactive Hover Transformations */
+.glass {
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), 
+                box-shadow 0.3s ease, 
+                border-color 0.3s ease,
+                background 0.3s ease !important;
+}
+
+.glass:hover {
+    transform: translateY(-6px) scale(1.01);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4), 0 0 15px rgba(0,245,255,0.1);
+    border-color: rgba(0, 245, 255, 0.3) !important;
+}
+
+/* Progress Bar Animations */
+@keyframes progressFill {
+    from { width: 0; }
+}
+
+.progress-bar-fill {
+    animation: progressFill 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Specialized 3D Slide-In for Upload Modules */
+@keyframes uploadSectionEntry {
+    0% { 
+        opacity: 0; 
+        transform: perspective(1000px) translateX(-60px) rotateY(-15deg) scale(0.95);
+        filter: blur(12px);
+    }
+    100% { 
+        opacity: 1; 
+        transform: perspective(1000px) translateX(0) rotateY(0) scale(1);
+        filter: blur(0);
+    }
+}
+
+.upload-module-entry {
+    animation: uploadSectionEntry 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.disable-animations .upload-module-entry {
+    animation: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+}
+
+.disable-animations #dashboard-content > div,
+.disable-animations .stagger-container > *,
+.disable-animations .glass {
+    animation: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+    transition: none !important;
+}
+
 /* Login Styles */
 .login-container {
+    position: fixed;
+    inset: 0;
     width: 100%;
-    height: 100vh;
+    height: 100%;
     display: flex;
     justify-content: center;
     align-items: center;
     background: var(--bg-navy);
+    z-index: 10;
+    overflow-y: auto;
 }
 
 .login-card {
@@ -94,6 +239,17 @@ h3 {
     padding: 60px 40px;
     text-align: center;
     animation: fadeIn 0.8s ease-out;
+}
+
+/* Remove all shadows from the login card - use higher specificity to beat .glass */
+.login-container .glass {
+    box-shadow: none !important;
+}
+
+.login-container .glass:hover {
+    box-shadow: none !important;
+    transform: none !important;
+    border-color: var(--glass-border) !important;
 }
 
 @keyframes fadeIn {
