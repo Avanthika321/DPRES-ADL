@@ -5,10 +5,11 @@ const User = require('../models/User');
 // @route   POST /api/auth/register
 // @access  Public
 const registerUser = async (req, res) => {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, standard, section } = req.body;
 
     try {
-        const userExists = await User.findOne({ email });
+        const normalizedEmail = email.toLowerCase();
+        const userExists = await User.findOne({ email: normalizedEmail });
 
         if (userExists) {
             return res.status(400).json({ message: 'User already exists' });
@@ -16,9 +17,11 @@ const registerUser = async (req, res) => {
 
         const user = await User.create({
             name,
-            email,
+            email: normalizedEmail,
             password,
-            role
+            role,
+            standard: standard || '',
+            section: section || ''
         });
 
         if (user) {
@@ -27,7 +30,9 @@ const registerUser = async (req, res) => {
                     _id: user._id,
                     name: user.name,
                     email: user.email,
-                    role: user.role
+                    role: user.role,
+                    standard: user.standard,
+                    section: user.section
                 },
                 token: generateToken(user._id)
             });
@@ -44,7 +49,8 @@ const loginUser = async (req, res) => {
     const { email, password } = req.body;
 
     try {
-        const user = await User.findOne({ email });
+        const normalizedEmail = email.toLowerCase();
+        const user = await User.findOne({ email: normalizedEmail });
 
         if (user && (await user.matchPassword(password))) {
             res.json({
@@ -52,7 +58,9 @@ const loginUser = async (req, res) => {
                     _id: user._id,
                     name: user.name,
                     email: user.email,
-                    role: user.role
+                    role: user.role,
+                    standard: user.standard,
+                    section: user.section
                 },
                 token: generateToken(user._id)
             });
@@ -76,7 +84,9 @@ const verifyToken = async (req, res) => {
                 _id: req.user._id,
                 name: req.user.name,
                 email: req.user.email,
-                role: req.user.role
+                role: req.user.role,
+                standard: req.user.standard,
+                section: req.user.section
             }
         });
     } catch (error) {

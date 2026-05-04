@@ -23,6 +23,14 @@ const drillSchema = mongoose.Schema({
         enum: ['Scheduled', 'Active', 'Completed', 'Cancelled'],
         default: 'Scheduled'
     },
+    targetStandard: {
+        type: String,
+        default: ''
+    },
+    targetSection: {
+        type: String,
+        default: ''
+    },
     participation: {
         type: Number,
         default: 0

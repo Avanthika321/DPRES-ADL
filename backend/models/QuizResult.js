@@ -6,11 +6,16 @@ const quizResultSchema = mongoose.Schema({
         required: true,
         ref: 'User'
     },
-    moduleId: {
+    quizId: {
         type: mongoose.Schema.Types.ObjectId,
         required: true,
-        ref: 'Module'
+        ref: 'Quiz'
     },
+    answers: [{
+        questionIndex: Number,
+        selectedOption: Number,
+        isCorrect: Boolean
+    }],
     score: {
         type: Number,
         required: true

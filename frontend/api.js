@@ -9,90 +9,50 @@ const API_URL = 'http://localhost:5000/api';
 // Authentication Functions
 // ========================
 
-/**
- * Store JWT token in localStorage after login
- * Called after successful login response from backend
- */
 function storeToken(token) {
-    console.log('🔑 Storing token in localStorage');
-    localStorage.setItem('token', token);
-    console.log('✓ Token stored');
+    localStorage.setItem('crisis_craft_token', token);
 }
 
-/**
- * Retrieve JWT token from localStorage
- */
 function getToken() {
-    const token = localStorage.getItem('token');
-    console.log('🔍 Retrieved token from localStorage');
-    return token;
+    return localStorage.getItem('crisis_craft_token');
 }
 
-/**
- * Clear token (logout)
- */
 function clearToken() {
-    console.log('🔓 Clearing token from localStorage');
-    localStorage.removeItem('token');
-    console.log('✓ Token cleared');
+    localStorage.removeItem('crisis_craft_token');
 }
 
 // ========================
 // Generic API Request Function
 // ========================
 
-/**
- * Make API request with automatic JWT token attachment
- * @param {string} endpoint - API endpoint (e.g., '/modules')
- * @param {string} method - HTTP method (GET, POST, PUT, DELETE)
- * @param {object} body - Request body (for POST, PUT)
- * @returns {Promise<object>} Response data
- */
 async function apiRequest(endpoint, method = 'GET', body = null) {
     try {
         const token = getToken();
-        
-        // Prepare headers
         const headers = {
             'Content-Type': 'application/json'
         };
 
-        // 🔐 CRITICAL: Attach JWT token in Authorization header
         if (token) {
             headers['Authorization'] = `Bearer ${token}`;
-            console.log('✓ JWT token attached to request');
-        } else {
-            console.warn('⚠️  No token found - request will not be authenticated');
         }
 
-        // Prepare request options
         const options = {
             method,
             headers
         };
 
-        // Add body for POST/PUT requests
         if (body) {
             options.body = JSON.stringify(body);
-            console.log('📤 Request body:', body);
         }
 
-        console.log(`📡 ${method} ${API_URL}${endpoint}`);
-
-        // Make request
         const response = await fetch(`${API_URL}${endpoint}`, options);
 
-        // Handle response
         if (!response.ok) {
             const errorData = await response.json();
-            console.error('❌ API Error:', errorData);
             throw new Error(errorData.message || `HTTP ${response.status}`);
         }
 
-        const data = await response.json();
-        console.log('✓ Response received:', data);
-        return data;
-
+        return await response.json();
     } catch (error) {
         console.error('❌ API Request Failed:', error.message);
         throw error;
@@ -103,172 +63,230 @@ async function apiRequest(endpoint, method = 'GET', body = null) {
 // Authentication API Calls
 // ========================
 
-/**
- * Login user and store token
- */
 async function loginUser(email, password) {
-    try {
-        console.log('🔐 Attempting login...');
-        const response = await apiRequest('/auth/login', 'POST', { email, password });
-        
-        // Store token from response
-        if (response.token) {
-            storeToken(response.token);
-            console.log('✅ Login successful, user:', response.user);
-            return response;
-        }
-    } catch (error) {
-        console.error('❌ Login failed:', error.message);
-        throw error;
+    const response = await apiRequest('/auth/login', 'POST', { email, password });
+    if (response.token) {
+        storeToken(response.token);
     }
+    return response;
 }
 
-/**
- * Register new user
- */
 async function registerUser(name, email, password, role) {
-    try {
-        console.log('📝 Attempting registration...');
-        const response = await apiRequest('/auth/register', 'POST', { 
-            name, 
-            email, 
-            password, 
-            role 
-        });
-        
-        // Store token from response
-        if (response.token) {
-            storeToken(response.token);
-            console.log('✅ Registration successful, user:', response.user);
-            return response;
-        }
-    } catch (error) {
-        console.error('❌ Registration failed:', error.message);
-        throw error;
+    const response = await apiRequest('/auth/register', 'POST', { name, email, password, role });
+    if (response.token) {
+        storeToken(response.token);
     }
+    return response;
 }
 
-/**
- * Logout user
- */
 function logoutUser() {
     clearToken();
-    console.log('✅ Logout successful');
-    // Optionally redirect to login page
-    // window.location.href = '/index.html';
 }
 
 // ========================
 // Module API Calls
 // ========================
 
-/**
- * Get all modules
- */
 async function getModules() {
-    try {
-        console.log('📚 Fetching modules...');
-        return await apiRequest('/modules', 'GET');
-    } catch (error) {
-        console.error('❌ Failed to fetch modules:', error.message);
-        throw error;
-    }
+    return await apiRequest('/modules', 'GET');
 }
 
-/**
- * Create a new module
- * IMPORTANT: Must be authenticated (teacher or admin)
- */
-async function createModule(title, fileName) {
-    try {
-        console.log('✍️  Creating module...');
-        const token = getToken();
-        
-        if (!token) {
-            throw new Error('No token found. User must be logged in to create modules.');
-        }
+async function getModule(id) {
+    return await apiRequest(`/modules/${id}`, 'GET');
+}
 
-        const response = await apiRequest('/modules', 'POST', { 
-            title, 
-            fileName 
-        });
-        
-        console.log('✅ Module created successfully');
-        console.log('Module ID:', response._id);
-        console.log('Created by:', response.createdBy);
-        
-        return response;
-    } catch (error) {
-        console.error('❌ Failed to create module:', error.message);
-        throw error;
-    }
+async function createModule(title, fileName, content, disasterType) {
+    return await apiRequest('/modules', 'POST', { title, fileName, content, disasterType });
+}
+
+async function deleteModule(id) {
+    return await apiRequest(`/modules/${id}`, 'DELETE');
+}
+
+async function trackModuleProgress(id, percentComplete) {
+    return await apiRequest(`/modules/${id}/progress`, 'POST', { percentComplete });
+}
+
+async function startModuleProgress(id) {
+    return await apiRequest(`/modules/${id}/start`, 'POST');
+}
+
+async function getMyModuleProgress() {
+    return await apiRequest('/modules/my-progress', 'GET');
 }
 
 // ========================
-// Usage Examples
+// Quiz API Calls
 // ========================
 
-/*
-// EXAMPLE 1: Login
-async function exampleLogin() {
-    try {
-        const result = await loginUser('jane.smith@crisiscraft.edu', 'teacher');
-        console.log('Logged in as:', result.user.email);
-        console.log('User ID:', result.user._id);
-    } catch (error) {
-        alert('Login failed: ' + error.message);
-    }
+async function getQuizzes() {
+    return await apiRequest('/quizzes', 'GET');
 }
 
-// EXAMPLE 2: Create Module (after login)
-async function exampleCreateModule() {
-    try {
-        const module = await createModule('Fire Safety', 'fire-safety.pdf');
-        console.log('New module created with ID:', module._id);
-    } catch (error) {
-        alert('Failed to create module: ' + error.message);
-    }
+async function getQuiz(id) {
+    return await apiRequest(`/quizzes/${id}`, 'GET');
 }
 
-// EXAMPLE 3: Get Modules
-async function exampleGetModules() {
-    try {
-        const modules = await getModules();
-        console.log('Modules:', modules);
-    } catch (error) {
-        alert('Failed to fetch modules: ' + error.message);
-    }
+async function createQuiz(quizData) {
+    return await apiRequest('/quizzes', 'POST', quizData);
 }
 
-// EXAMPLE 4: Full flow
-async function exampleFullFlow() {
-    try {
-        // 1. Login
-        await loginUser('jane.smith@crisiscraft.edu', 'teacher');
-        
-        // 2. Create module
-        const module = await createModule('Earthquake Preparedness', 'earthquake.pdf');
-        console.log('Module created:', module);
-        
-        // 3. Fetch all modules
-        const modules = await getModules();
-        console.log('All modules:', modules);
-        
-        // 4. Logout
-        logoutUser();
-    } catch (error) {
-        console.error('Error:', error.message);
-    }
+async function updateQuiz(id, quizData) {
+    return await apiRequest(`/quizzes/${id}`, 'PATCH', quizData);
 }
-*/
+
+async function deleteQuiz(id) {
+    return await apiRequest(`/quizzes/${id}`, 'DELETE');
+}
+
+async function submitQuiz(quizId, answers) {
+    return await apiRequest('/quizzes/submit', 'POST', { quizId, answers });
+}
+
+async function getMyQuizResults() {
+    return await apiRequest('/quizzes/my-results', 'GET');
+}
 
 // ========================
-// Export Functions (for use in other scripts)
+// Drill API Calls
 // ========================
-// Make functions available globally or as exports
+
+async function getDrills() {
+    return await apiRequest('/drills', 'GET');
+}
+
+async function getDrill(id) {
+    return await apiRequest(`/drills/${id}`, 'GET');
+}
+
+async function createDrill(drillData) {
+    return await apiRequest('/drills', 'POST', drillData);
+}
+
+async function updateDrill(id, drillData) {
+    return await apiRequest(`/drills/${id}`, 'PUT', drillData);
+}
+
+async function deleteDrill(id) {
+    return await apiRequest(`/drills/${id}`, 'DELETE');
+}
+
+async function registerForDrill(id) {
+    return await apiRequest(`/drills/${id}/register`, 'POST');
+}
+
+async function getNextDrill() {
+    return await apiRequest('/drills/next', 'GET');
+}
+
+async function getDrillParticipation() {
+    return await apiRequest('/drills/participation', 'GET');
+}
+
+// ========================
+// Admin API Calls
+// ========================
+
+async function getAdminStats() {
+    return await apiRequest('/admin/stats', 'GET');
+}
+
+async function getAllUsers() {
+    return await apiRequest('/admin/users', 'GET');
+}
+
+async function adminCreateUser(userData) {
+    return await apiRequest('/admin/users', 'POST', userData);
+}
+
+async function adminDeleteUser(id) {
+    return await apiRequest(`/admin/users/${id}`, 'DELETE');
+}
+
+async function adminUpdateUser(id, userData) {
+    return await apiRequest(`/admin/users/${id}`, 'PATCH', userData);
+}
+
+async function getLeaderboard() {
+    return await apiRequest('/admin/leaderboard', 'GET');
+}
+
+async function sendAdminAlert(message, type) {
+    return await apiRequest('/admin/alerts', 'POST', { message, type });
+}
+
+async function getActiveAlerts() {
+    return await apiRequest('/admin/alerts', 'GET');
+}
+
+async function dismissAlert(id) {
+    return await apiRequest(`/admin/alerts/${id}`, 'DELETE');
+}
+
+async function getDetailedReports() {
+    return await apiRequest('/admin/reports', 'GET');
+}
+
+// ========================
+// Student/Teacher API Calls
+// ========================
+
+async function getStudentStats() {
+    return await apiRequest('/student/stats', 'GET');
+}
+
+async function getAchievements() {
+    return await apiRequest('/student/achievements', 'GET');
+}
+
+async function getTeacherStats() {
+    return await apiRequest('/teacher/stats', 'GET');
+}
+
+async function getStudentPerformanceStats() {
+    return await apiRequest('/teacher/student-performance', 'GET');
+}
+
+// ========================
+// Export Functions
+// ========================
 window.apiRequest = apiRequest;
 window.loginUser = loginUser;
 window.registerUser = registerUser;
 window.logoutUser = logoutUser;
 window.getModules = getModules;
+window.getModule = getModule;
 window.createModule = createModule;
+window.deleteModule = deleteModule;
+window.trackModuleProgress = trackModuleProgress;
+window.startModuleProgress = startModuleProgress;
+window.getMyModuleProgress = getMyModuleProgress;
+window.getQuizzes = getQuizzes;
+window.getQuiz = getQuiz;
+window.createQuiz = createQuiz;
+window.updateQuiz = updateQuiz;
+window.deleteQuiz = deleteQuiz;
+window.submitQuiz = submitQuiz;
+window.getMyQuizResults = getMyQuizResults;
+window.getDrills = getDrills;
+window.getDrill = getDrill;
+window.createDrill = createDrill;
+window.updateDrill = updateDrill;
+window.deleteDrill = deleteDrill;
+window.registerForDrill = registerForDrill;
+window.getNextDrill = getNextDrill;
+window.getDrillParticipation = getDrillParticipation;
+window.getAdminStats = getAdminStats;
+window.getAllUsers = getAllUsers;
+window.adminCreateUser = adminCreateUser;
+window.adminDeleteUser = adminDeleteUser;
+window.adminUpdateUser = adminUpdateUser;
+window.getLeaderboard = getLeaderboard;
+window.sendAdminAlert = sendAdminAlert;
+window.getActiveAlerts = getActiveAlerts;
+window.dismissAlert = dismissAlert;
+window.getDetailedReports = getDetailedReports;
+window.getStudentStats = getStudentStats;
+window.getAchievements = getAchievements;
+window.getTeacherStats = getTeacherStats;
+window.getStudentPerformanceStats = getStudentPerformanceStats;

@@ -19,15 +19,36 @@ const userSchema = mongoose.Schema({
         type: String,
         enum: ['student', 'teacher', 'admin'],
         default: 'student'
+    },
+    score: {
+        type: Number,
+        default: 0
+    },
+    institution: {
+        type: String,
+        default: 'CrisisCraft Academy'
+    },
+    standard: {
+        type: String,
+        default: ''
+    },
+    section: {
+        type: String,
+        default: ''
     }
 }, {
     timestamps: true
 });
 
-// Hash password before saving
-userSchema.pre('save', async function(next) {
+// Pre-save hook for password hashing and email normalization
+userSchema.pre('save', async function() {
+    // Normalize email
+    if (this.isModified('email')) {
+        this.email = this.email.toLowerCase();
+    }
+
     if (!this.isModified('password')) {
-        next();
+        return;
     }
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
