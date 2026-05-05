@@ -1,4 +1,4 @@
-const App = {
+window.App = {
     state: {
         role: null,
         activeSection: 'Dashboard',
@@ -141,6 +141,14 @@ const App = {
         const userVal = document.getElementById('login-user').value.trim();
         const passVal = document.getElementById('login-pass').value;
         const errorEl = document.getElementById('login-error');
+
+        if (!userVal || !passVal) {
+            if (errorEl) {
+                errorEl.style.display = 'block';
+                errorEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> Please fill all required fields`;
+            }
+            return;
+        }
 
         try {
             const response = await fetch('http://localhost:5000/api/auth/login', {
@@ -544,7 +552,7 @@ const App = {
             '<p style="color: var(--text-secondary); font-size: 0.95rem; margin-top: 10px;">' + subtitle + '</p>' +
             '</div>' +
             registerFields +
-            '<div class="input-group"><label>Email Address</label><input type="email" id="login-user" class="input-style" placeholder="email@example.com"></div>' +
+            '<div class="input-group"><label>Username</label><input type="text" id="login-user" class="input-style" placeholder="Username or Email"></div>' +
             '<div class="input-group" style="margin-bottom: 25px;"><label>Password</label><input type="password" id="login-pass" class="input-style" placeholder="••••••••"></div>' +
             registerExtras +
             '<div id="login-error" style="display:none; color:var(--red); background:rgba(239, 68, 68, 0.1); padding:12px; border-radius:10px; font-size:0.9rem; margin-bottom:20px; border:1px solid rgba(239, 68, 68, 0.2);"></div>' +
@@ -1507,7 +1515,7 @@ const App = {
         document.getElementById('selectedFileName').textContent = file.name;
         document.getElementById('selectedFileSize').textContent = (file.size / 1024 / 1024).toFixed(2) + ' MB';
         document.getElementById('moduleTitle').value = file.name.replace('.pdf', '').replace(/[-_]/g, ' ');
-        
+
         const reader = new FileReader();
         reader.onload = (e) => {
             if (!this.state) this.state = {};
@@ -1695,9 +1703,9 @@ const App = {
         const targetSection = document.getElementById('editModSection').value;
 
         if (!title) return this.showToast('Module title is required', 'error');
-        
+
         const payload = { title, content, targetStandard, targetSection };
-        
+
         // If they uploaded a new PDF, include it in the update payload
         if (this.state && this.state.editFileData) {
             payload.fileData = this.state.editFileData;
@@ -1889,14 +1897,14 @@ const App = {
                                                         <td style="padding: 10px 0; color: var(--text-secondary);">${s.email}</td>
                                                          <td style="padding: 10px 0;">
                                                             ${(() => {
-                                                                const scheduledDate = item.drill ? new Date(item.drill.scheduledDate) : new Date();
-                                                                const isPast = scheduledDate < new Date();
-                                                                const status = s.participated ? 'Participated' : (isPast ? 'Missed' : '-');
-                                                                const bgColor = s.participated ? 'rgba(16, 185, 129, 0.1)' : (isPast ? 'rgba(239, 68, 68, 0.1)' : 'rgba(255, 255, 255, 0.05)');
-                                                                const color = s.participated ? 'var(--green)' : (isPast ? 'var(--red)' : 'var(--text-secondary)');
-                                                                const borderColor = s.participated ? 'rgba(16, 185, 129, 0.2)' : (isPast ? 'rgba(239, 68, 68, 0.2)' : 'rgba(255, 255, 255, 0.1)');
-                                                                return `<span style="padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; background: ${bgColor}; color: ${color}; border: 1px solid ${borderColor};">${status}</span>`;
-                                                            })()}
+                const scheduledDate = item.drill ? new Date(item.drill.scheduledDate) : new Date();
+                const isPast = scheduledDate < new Date();
+                const status = s.participated ? 'Participated' : (isPast ? 'Missed' : '-');
+                const bgColor = s.participated ? 'rgba(16, 185, 129, 0.1)' : (isPast ? 'rgba(239, 68, 68, 0.1)' : 'rgba(255, 255, 255, 0.05)');
+                const color = s.participated ? 'var(--green)' : (isPast ? 'var(--red)' : 'var(--text-secondary)');
+                const borderColor = s.participated ? 'rgba(16, 185, 129, 0.2)' : (isPast ? 'rgba(239, 68, 68, 0.2)' : 'rgba(255, 255, 255, 0.1)');
+                return `<span style="padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; background: ${bgColor}; color: ${color}; border: 1px solid ${borderColor};">${status}</span>`;
+            })()}
                                                         </td>
                                                         <td style="padding: 10px 0; color: ${s.participated ? 'var(--cyan)' : 'var(--text-secondary)'}; font-weight: 600;">
                                                             ${s.participated ? s.score + '%' : '-'}
@@ -2351,11 +2359,11 @@ const App = {
                     </div>
                     <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap:20px;">
                         ${modules.map((m, i) => {
-                            const progressRecord = (this.state.studentStats?.progress || []).find(p => p.module?._id === m._id || p.module === m._id);
-                            const isCompleted = progressRecord?.status === 'Completed';
-                            const percent = progressRecord?.percentComplete || 0;
-                            
-                            return `
+                const progressRecord = (this.state.studentStats?.progress || []).find(p => p.module?._id === m._id || p.module === m._id);
+                const isCompleted = progressRecord?.status === 'Completed';
+                const percent = progressRecord?.percentComplete || 0;
+
+                return `
                                 <div class="glass glass-card" style="padding:25px; border:1px solid ${isCompleted ? 'rgba(34,197,94,0.3)' : 'rgba(0,245,255,0.15)'}; position:relative;">
                                     ${isCompleted ? `<div style="position:absolute; top:10px; right:10px; color:#22c55e;"><i class="fas fa-check-circle"></i></div>` : ''}
                                     <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:15px;">
@@ -2393,7 +2401,7 @@ const App = {
                                     </button>
                                 </div>
                             `;
-                        }).join('')}
+            }).join('')}
                     </div>
                 </div>`;
         }
@@ -3261,7 +3269,7 @@ const App = {
     async updateModuleProgress(moduleId, percent) {
         try {
             await trackModuleProgress(moduleId, percent);
-            
+
             if (percent === 100) {
                 this.showToast('Module completed successfully', 'success');
             } else {
@@ -3270,7 +3278,7 @@ const App = {
 
             await this.loadStudentStats();
             this.render();
-            
+
             if (percent === 100) {
                 const modal = document.getElementById('moduleViewerModal');
                 if (modal) setTimeout(() => modal.remove(), 1000);
@@ -3364,17 +3372,17 @@ const App = {
                             </div>
 
                             <div style="margin-top:30px; text-align:center;">
-                                ${currentPercent >= 100 ? 
-                                    `<button class="btn" style="width:100%; padding:15px; font-size:1rem; background:rgba(34,197,94,0.1); color:#22c55e; border:1px solid rgba(34,197,94,0.3); border-radius:12px; cursor:default; display:flex; justify-content:center; align-items:center;">
+                                ${currentPercent >= 100 ?
+                    `<button class="btn" style="width:100%; padding:15px; font-size:1rem; background:rgba(34,197,94,0.1); color:#22c55e; border:1px solid rgba(34,197,94,0.3); border-radius:12px; cursor:default; display:flex; justify-content:center; align-items:center;">
                                         <i class="fas fa-check-circle" style="margin-right:8px;"></i> Completed
                                     </button>` :
-                                    `<button class="btn btn-primary" style="width:100%; padding:15px; font-size:1rem; background:linear-gradient(135deg, var(--cyan), #0077ff); border:none; border-radius:12px; font-weight:700; box-shadow:0 10px 20px rgba(0,245,255,0.2); transition:transform 0.2s, box-shadow 0.2s; display:flex; justify-content:center; align-items:center; color:white; cursor:pointer;" 
+                    `<button class="btn btn-primary" style="width:100%; padding:15px; font-size:1rem; background:linear-gradient(135deg, var(--cyan), #0077ff); border:none; border-radius:12px; font-weight:700; box-shadow:0 10px 20px rgba(0,245,255,0.2); transition:transform 0.2s, box-shadow 0.2s; display:flex; justify-content:center; align-items:center; color:white; cursor:pointer;" 
                                         onclick="App.updateModuleProgress('${mod._id}', 100)" 
                                         onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 12px 25px rgba(0,245,255,0.3)';" 
                                         onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 10px 20px rgba(0,245,255,0.2)';">
                                         <i class="fas fa-flag-checkered" style="margin-right:8px;"></i> Submit & Complete
                                     </button>`
-                                }
+                }
                             </div>
                         </div>
                     </div>
