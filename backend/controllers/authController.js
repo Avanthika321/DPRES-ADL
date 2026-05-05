@@ -52,22 +52,57 @@ const loginUser = async (req, res) => {
         const normalizedEmail = email.toLowerCase();
         const user = await User.findOne({ email: normalizedEmail });
 
-        if (user && (await user.matchPassword(password))) {
-            res.json({
-                user: {
-                    _id: user._id,
-                    name: user.name,
-                    email: user.email,
-                    role: user.role,
-                    standard: user.standard,
-                    section: user.section
-                },
-                token: generateToken(user._id)
-            });
-        } else {
-            res.status(401).json({ message: 'Invalid email or password' });
+        // Logic to satisfy the 3-state requirement:
+        // 1. Wrong Username + Password provided = "Invalid username and password"
+        // 2. Wrong Username + No Password = "Invalid username"
+        // 3. Correct Username + Wrong Password = "Invalid password"
+
+        if (!user) {
+            console.log(`❌ Login Failed: User ${email} not found.`);
+            
+            // Case 1: No password provided -> "Invalid username"
+            if (!password || password.trim() === '') {
+                return res.status(401).json({ message: 'Invalid username' });
+            }
+
+            // Check if this password matches ANY other user in the system
+            const allUsers = await User.find({});
+            let passwordExistsInSystem = false;
+            for (const u of allUsers) {
+                if (await u.matchPassword(password)) {
+                    passwordExistsInSystem = true;
+                    break;
+                }
+            }
+
+            if (passwordExistsInSystem) {
+                // Password is correct for SOMEONE, but the username is wrong
+                return res.status(401).json({ message: 'Invalid username' });
+            } else {
+                // Username is wrong AND the password doesn't match anyone else either
+                return res.status(401).json({ message: 'Invalid username and password' });
+            }
         }
+
+        const isMatch = await user.matchPassword(password);
+        if (!isMatch) {
+            return res.status(401).json({ message: 'Invalid password' });
+        }
+
+        console.log(`✅ Login Success: ${email}`);
+        res.json({
+            user: {
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                standard: user.standard,
+                section: user.section
+            },
+            token: generateToken(user._id)
+        });
     } catch (error) {
+        console.error('🔥 Login Error:', error);
         res.status(500).json({ message: error.message });
     }
 };
