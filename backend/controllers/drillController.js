@@ -202,7 +202,7 @@ const getDrillParticipation = async (req, res) => {
         for (const drill of drills) {
             const registrations = await DrillRegistration.find({ drill: drill._id })
                 .populate('user', 'name email');
-            
+
             participationData.push({
                 drill: {
                     _id: drill._id,
