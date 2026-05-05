@@ -47,7 +47,7 @@ const getModule = async (req, res) => {
 // @route   POST /api/modules
 // @access  Protected (Teacher/Admin)
 const createModule = async (req, res) => {
-    const { title, fileName, content, disasterType, targetStandard, targetSection } = req.body;
+    const { title, fileName, fileData, content, disasterType, targetStandard, targetSection } = req.body;
 
     // Safety check: ensure user is authenticated
     if (!req.user) {
@@ -63,6 +63,7 @@ const createModule = async (req, res) => {
         const module = new Module({
             title,
             fileName,
+            fileData,
             content: content || '',
             disasterType: disasterType || 'General',
             targetStandard: targetStandard || '',

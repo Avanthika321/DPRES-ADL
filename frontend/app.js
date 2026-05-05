@@ -163,7 +163,7 @@ const App = {
                     this.state.profiles[data.user.role].email = data.user.email;
                     this.state.profiles[data.user.role].standard = data.user.standard || '';
                     this.state.profiles[data.user.role].section = data.user.section || '';
-                    
+
                     // Update title dynamically for students
                     if (data.user.role === 'student') {
                         const std = data.user.standard || '';
@@ -271,7 +271,8 @@ const App = {
         try {
             console.log('📥 Fetching student stats...');
             const stats = await getStudentStats();
-            this.state.studentStats = stats;
+            const progress = await getMyModuleProgress();
+            this.state.studentStats = { ...stats, progress };
         } catch (error) {
             console.error('❌ Error loading student stats:', error);
         }
@@ -406,7 +407,7 @@ const App = {
                 case 'Virtual Drills':
                 case 'Drill Participation':
                     if (this.state.role === 'teacher' || this.state.role === 'admin') {
-                        await this.loadDrillParticipation();
+                        await Promise.all([this.loadDrillParticipation(), this.loadDrills()]);
                     } else {
                         await this.loadDrills();
                     }
@@ -519,42 +520,42 @@ const App = {
         return '<div style="min-height: 100vh; display: flex; background: var(--bg-navy); overflow: hidden;">' +
             '<!-- Left Side: Branding / Hero -->' +
             '<div style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; padding: 40px;">' +
-                '<div style="position: absolute; top: -100px; left: -100px; width: 400px; height: 400px; background: radial-gradient(circle, rgba(0,245,255,0.1) 0%, transparent 70%); border-radius: 50%; filter: blur(40px); animation: pulse-animation 4s infinite;"></div>' +
-                '<div style="position: absolute; bottom: 10%; right: 10%; width: 300px; height: 300px; background: radial-gradient(circle, rgba(139,92,246,0.1) 0%, transparent 70%); border-radius: 50%; filter: blur(50px); animation: pulse-animation 6s infinite;"></div>' +
-                '<div style="z-index: 10; display: flex; flex-direction: column; align-items: center; text-align: center; animation: fadeIn 1s ease-out;">' +
-                    '<div style="display: flex; align-items: center; gap: 20px; margin-bottom: 25px;">' +
-                        '<svg width="150" height="150" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 0 20px rgba(0, 245, 255, 0.4));">' +
-                            '<path d="M50 5L15 20V45C15 65 30 85 50 95C70 85 85 65 85 45V20L50 5Z" fill="#1e3a8a" stroke="#00f5ff" stroke-width="3"/>' +
-                            '<path d="M30 40H70V70C70 73 67 75 64 75H36C33 75 30 73 30 70V40Z" fill="rgba(255,255,255,0.08)"/>' +
-                            '<path d="M55 25L35 50H50L45 75L65 50H50L55 25Z" fill="#00f5ff">' +
-                                '<animate attributeName="opacity" values="1;0.7;1" dur="2s" repeatCount="indefinite" />' +
-                            '</path>' +
-                        '</svg>' +
-                        '<span style="font-size: 64px; font-weight: 700; color: white; letter-spacing: -2px;">Crisis<span style="color: var(--cyan);">Craft</span></span>' +
-                    '</div>' +
-                    '<p style="color: var(--text-secondary); font-size: 1.4rem; font-weight: 400; letter-spacing: 0.5px;">Empowering Preparedness Through Education</p>' +
-                '</div>' +
+            '<div style="position: absolute; top: -100px; left: -100px; width: 400px; height: 400px; background: radial-gradient(circle, rgba(0,245,255,0.1) 0%, transparent 70%); border-radius: 50%; filter: blur(40px); animation: pulse-animation 4s infinite;"></div>' +
+            '<div style="position: absolute; bottom: 10%; right: 10%; width: 300px; height: 300px; background: radial-gradient(circle, rgba(139,92,246,0.1) 0%, transparent 70%); border-radius: 50%; filter: blur(50px); animation: pulse-animation 6s infinite;"></div>' +
+            '<div style="z-index: 10; display: flex; flex-direction: column; align-items: center; text-align: center; animation: fadeIn 1s ease-out;">' +
+            '<div style="display: flex; align-items: center; gap: 20px; margin-bottom: 25px;">' +
+            '<svg width="150" height="150" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 0 20px rgba(0, 245, 255, 0.4));">' +
+            '<path d="M50 5L15 20V45C15 65 30 85 50 95C70 85 85 65 85 45V20L50 5Z" fill="#1e3a8a" stroke="#00f5ff" stroke-width="3"/>' +
+            '<path d="M30 40H70V70C70 73 67 75 64 75H36C33 75 30 73 30 70V40Z" fill="rgba(255,255,255,0.08)"/>' +
+            '<path d="M55 25L35 50H50L45 75L65 50H50L55 25Z" fill="#00f5ff">' +
+            '<animate attributeName="opacity" values="1;0.7;1" dur="2s" repeatCount="indefinite" />' +
+            '</path>' +
+            '</svg>' +
+            '<span style="font-size: 64px; font-weight: 700; color: white; letter-spacing: -2px;">Crisis<span style="color: var(--cyan);">Craft</span></span>' +
+            '</div>' +
+            '<p style="color: var(--text-secondary); font-size: 1.4rem; font-weight: 400; letter-spacing: 0.5px;">Empowering Preparedness Through Education</p>' +
+            '</div>' +
             '</div>' +
             '<!-- Right Side: Login/Register Card -->' +
             '<div style="flex: 1; display: flex; justify-content: center; align-items: center; background: rgba(255,255,255,0.02); backdrop-filter: blur(10px); border-left: 1px solid rgba(255,255,255,0.05); position: relative;">' +
-                '<div class="glass login-card" style="padding: 50px; width: 450px; border-radius: 20px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">' +
-                    '<div style="text-align: center; margin-bottom: 30px;">' +
-                        '<h2 style="font-size: 2rem;">' + heading + '</h2>' +
-                        '<p style="color: var(--text-secondary); font-size: 0.95rem; margin-top: 10px;">' + subtitle + '</p>' +
-                    '</div>' +
-                    registerFields +
-                    '<div class="input-group"><label>Email Address</label><input type="email" id="login-user" class="input-style" placeholder="email@example.com"></div>' +
-                    '<div class="input-group" style="margin-bottom: 25px;"><label>Password</label><input type="password" id="login-pass" class="input-style" placeholder="••••••••"></div>' +
-                    registerExtras +
-                    '<div id="login-error" style="display:none; color:var(--red); background:rgba(239, 68, 68, 0.1); padding:12px; border-radius:10px; font-size:0.9rem; margin-bottom:20px; border:1px solid rgba(239, 68, 68, 0.2);"></div>' +
-                    '<button onclick="' + btnAction + '" class="btn btn-primary" style="margin-top: 10px; padding: 16px; font-size: 1.05rem;">' + btnLabel + '</button>' +
-                    '<p style="text-align: center; margin-top: 25px; font-size: 0.95rem; color: var(--text-secondary);">' +
-                        switchText + ' ' +
-                        '<a href="#" onclick="App.state.showRegister = ' + switchAction + '; App.render(); return false;" style="color: var(--cyan); text-decoration: none; font-weight: 600; margin-left: 5px;">' + switchLabel + '</a>' +
-                    '</p>' +
-                '</div>' +
+            '<div class="glass login-card" style="padding: 50px; width: 450px; border-radius: 20px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">' +
+            '<div style="text-align: center; margin-bottom: 30px;">' +
+            '<h2 style="font-size: 2rem;">' + heading + '</h2>' +
+            '<p style="color: var(--text-secondary); font-size: 0.95rem; margin-top: 10px;">' + subtitle + '</p>' +
             '</div>' +
-        '</div>';
+            registerFields +
+            '<div class="input-group"><label>Email Address</label><input type="email" id="login-user" class="input-style" placeholder="email@example.com"></div>' +
+            '<div class="input-group" style="margin-bottom: 25px;"><label>Password</label><input type="password" id="login-pass" class="input-style" placeholder="••••••••"></div>' +
+            registerExtras +
+            '<div id="login-error" style="display:none; color:var(--red); background:rgba(239, 68, 68, 0.1); padding:12px; border-radius:10px; font-size:0.9rem; margin-bottom:20px; border:1px solid rgba(239, 68, 68, 0.2);"></div>' +
+            '<button onclick="' + btnAction + '" class="btn btn-primary" style="margin-top: 10px; padding: 16px; font-size: 1.05rem;">' + btnLabel + '</button>' +
+            '<p style="text-align: center; margin-top: 25px; font-size: 0.95rem; color: var(--text-secondary);">' +
+            switchText + ' ' +
+            '<a href="#" onclick="App.state.showRegister = ' + switchAction + '; App.render(); return false;" style="color: var(--cyan); text-decoration: none; font-weight: 600; margin-left: 5px;">' + switchLabel + '</a>' +
+            '</p>' +
+            '</div>' +
+            '</div>' +
+            '</div>';
     },
 
     async submitRegister() {
@@ -614,7 +615,6 @@ const App = {
             admin: [
                 { icon: 'fa-chart-pie', label: 'Dashboard' },
                 { icon: 'fa-users', label: 'Manage Users' },
-                { icon: 'fa-book', label: 'Manage Modules' },
                 { icon: 'fa-vr-cardboard', label: 'Manage Drills' },
                 { icon: 'fa-file-alt', label: 'Reports & Analytics' },
                 { icon: 'fa-bell', label: 'Emergency Alerts' }
@@ -855,7 +855,7 @@ const App = {
         const role = this.state.role;
         if (nameInput) this.state.profiles[role].name = nameInput.value.trim();
         if (emailInput) this.state.profiles[role].email = emailInput.value.trim();
-        
+
         if (titleInput && titleInput.value.trim()) {
             this.state.profiles[role].title = titleInput.value.trim();
         } else if (role === 'student') {
@@ -979,7 +979,6 @@ const App = {
     renderAdminViews(section) {
         if (section === 'Dashboard') return this.getAdminOverview();
         if (section === 'Manage Users') return this.getManageUsers();
-        if (section === 'Manage Modules') return this.getUploadModules(); // Admin shares this UI with Teacher
         if (section === 'Manage Drills') return this.getManageDrills();
         if (section === 'Reports & Analytics') return this.getReportsPanel();
         if (section === 'Emergency Alerts') return this.getAlertPanel();
@@ -1092,9 +1091,8 @@ const App = {
         }
 
         return `
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px;">
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;">
                 ${this.renderStatCard("Total Users", stats.totalUsers, "fa-users", "var(--cyan)")}
-                ${this.renderStatCard("Modules", stats.modules, "fa-book", "var(--indigo)")}
                 ${this.renderStatCard("Active Drills", stats.activeDrills || 0, "fa-vr-cardboard", "var(--purple)")}
                 ${this.renderStatCard("System Readiness", stats.systemReadiness + "%", "fa-shield-alt", "var(--cyan)")}
             </div>
@@ -1422,14 +1420,14 @@ const App = {
                                     <label style="color:var(--text-secondary); font-size:0.85rem; display:block; margin-bottom:8px;">Target Class (Standard)</label>
                                     <select id="moduleStandard" style="width:100%; padding:12px; background:rgba(15,23,50,0.9); border:1px solid rgba(255,255,255,0.1); border-radius:12px; color:white; font-size:0.9rem;">
                                         <option value="">All Standards</option>
-                                        ${[6,7,8,9,10,11,12].map(s => `<option value="${s}">${s}th Standard</option>`).join('')}
+                                        ${[6, 7, 8, 9, 10, 11, 12].map(s => `<option value="${s}">${s}th Standard</option>`).join('')}
                                     </select>
                                 </div>
                                 <div>
                                     <label style="color:var(--text-secondary); font-size:0.85rem; display:block; margin-bottom:8px;">Target Section</label>
                                     <select id="moduleSection" style="width:100%; padding:12px; background:rgba(15,23,50,0.9); border:1px solid rgba(255,255,255,0.1); border-radius:12px; color:white; font-size:0.9rem;">
                                         <option value="">All Sections</option>
-                                        ${['A','B','C','D','E','F'].map(s => `<option value="${s}">Section ${s}</option>`).join('')}
+                                        ${['A', 'B', 'C', 'D', 'E', 'F'].map(s => `<option value="${s}">Section ${s}</option>`).join('')}
                                     </select>
                                 </div>
                             </div>
@@ -1461,12 +1459,12 @@ const App = {
                         ` : `
                             ${mods.map((m, i) => `
                                 <div class="glass" style="padding:18px 22px; display:flex; align-items:center; justify-content:space-between; border:1px solid rgba(0,245,255,0.15); transition:0.2s;" onmouseover="this.style.transform='translateX(4px)'" onmouseout="this.style.transform='translateX(0)'">
-                                    <div style="display:flex; align-items:center; gap:15px; flex:1;">
-                                        <div style="width:40px; height:40px; border-radius:10px; background:rgba(239,68,68,0.1); display:flex; align-items:center; justify-content:center;">
+                                    <div style="display:flex; align-items:center; gap:15px; flex:1; min-width:0; overflow:hidden;">
+                                        <div style="width:40px; height:40px; border-radius:10px; background:rgba(239,68,68,0.1); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
                                             <i class="fas fa-file-pdf" style="color:#ef4444;"></i>
                                         </div>
-                                        <div style="flex:1;">
-                                            <p style="font-weight:500; margin-bottom:3px;">${m.title}</p>
+                                        <div style="flex:1; min-width:0; overflow:hidden;">
+                                            <p style="font-weight:500; margin-bottom:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${m.title}</p>
                                             <div style="display:flex; flex-wrap:wrap; gap:15px; font-size:0.8rem; color:var(--text-secondary);">
                                                 <span><i class="fas fa-file" style="margin-right:4px;"></i>${m.fileName}</span>
                                                 <span><i class="far fa-calendar-alt" style="margin-right:4px;"></i>${new Date(m.createdAt).toLocaleDateString()}</span>
@@ -1480,7 +1478,13 @@ const App = {
                                             </div>
                                         </div>
                                     </div>
-                                    <div style="display:flex; gap:10px; align-items:center;">
+                                    <div style="display:flex; gap:10px; align-items:center; flex-shrink:0; margin-left:15px;">
+                                        <button class="btn" style="width:auto; padding:5px 12px; font-size:0.75rem; background:rgba(0,245,255,0.1); color:var(--cyan); border:1px solid rgba(0,245,255,0.2);" onclick="App.viewModule('${m._id}')">
+                                            <i class="fas fa-eye" style="margin-right:4px;"></i>View
+                                        </button>
+                                        <button class="btn" style="width:auto; padding:5px 12px; font-size:0.75rem; background:rgba(139,92,246,0.1); color:var(--purple); border:1px solid rgba(139,92,246,0.2);" onclick="App.editModule('${m._id}')">
+                                            <i class="fas fa-edit" style="margin-right:4px;"></i>Edit
+                                        </button>
                                         <i class="fas fa-trash" style="color:var(--red); cursor:pointer; opacity:0.6; transition:0.2s; font-size:0.85rem;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6" onclick="App.removeModule('${m._id}')"></i>
                                     </div>
                                 </div>
@@ -1503,11 +1507,19 @@ const App = {
         document.getElementById('selectedFileName').textContent = file.name;
         document.getElementById('selectedFileSize').textContent = (file.size / 1024 / 1024).toFixed(2) + ' MB';
         document.getElementById('moduleTitle').value = file.name.replace('.pdf', '').replace(/[-_]/g, ' ');
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            if (!this.state) this.state = {};
+            this.state.currentFileData = e.target.result;
+        };
+        reader.readAsDataURL(file);
     },
 
     clearFileSelection() {
         document.getElementById('pdfInput').value = '';
         document.getElementById('selectedFileInfo').style.display = 'none';
+        if (this.state) this.state.currentFileData = null;
     },
 
     async postModule() {
@@ -1515,7 +1527,7 @@ const App = {
         const file = document.getElementById('pdfInput')?.files[0];
         const targetStandard = document.getElementById('moduleStandard')?.value || '';
         const targetSection = document.getElementById('moduleSection')?.value || '';
-        
+
         if (!title) { this.showToast('Please enter a module title', 'error'); return; }
         if (!file) { this.showToast('Please select a PDF file', 'error'); return; }
 
@@ -1534,6 +1546,7 @@ const App = {
                     title: title,
                     content: document.getElementById('moduleContent')?.value.trim() || '',
                     fileName: file.name,
+                    fileData: this.state ? this.state.currentFileData : null,
                     targetStandard: targetStandard,
                     targetSection: targetSection
                 })
@@ -1575,6 +1588,153 @@ const App = {
         } catch (error) {
             console.error('Module deletion error:', error);
             this.showToast('Network error while deleting module', 'error');
+        }
+    },
+
+    viewModule(moduleId) {
+        const mod = (this.state.uploadedModules || []).find(m => m._id === moduleId);
+        if (!mod) {
+            this.showToast('Module not found', 'error');
+            return;
+        }
+
+        if (mod.fileData) {
+            const newWindow = window.open();
+            if (newWindow) {
+                newWindow.document.write(`
+                    <html>
+                        <head><title>${mod.title}</title></head>
+                        <body style="margin:0; padding:0; overflow:hidden;">
+                            <embed src="${mod.fileData}" type="application/pdf" width="100%" height="100%">
+                        </body>
+                    </html>
+                `);
+            } else {
+                this.showToast('Popup blocked. Showing in-app viewer...', 'info');
+                this.showModuleViewer(moduleId);
+            }
+        } else if (mod.fileName) {
+            // Restore the original beautifully formatted jsPDF document
+            if (window.jspdf) {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(22);
+                doc.setTextColor(0, 196, 204); // Cyan color
+                doc.text(mod.title || 'Module Document', 20, 30);
+                
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(10);
+                doc.setTextColor(100, 100, 100);
+                doc.text(`File: ${mod.fileName || 'N/A'}  |  Uploaded: ${new Date(mod.createdAt || Date.now()).toLocaleDateString()}`, 20, 42);
+                
+                doc.setFontSize(12);
+                doc.setTextColor(30, 30, 30);
+                
+                const contentText = mod.content || 'No content provided for this module.';
+                const splitText = doc.splitTextToSize(contentText, 170);
+                doc.text(splitText, 20, 60);
+                
+                const blob = doc.output('blob');
+                const newWindow = window.open('', '_blank');
+                if (newWindow) {
+                    newWindow.document.write('<html style="background:#333;"><body style="color:white; font-family:sans-serif; text-align:center; padding-top:50px;">Loading PDF Document...</body></html>');
+                    const blobUrl = URL.createObjectURL(blob);
+                    newWindow.location.href = blobUrl;
+                } else {
+                    this.showToast('Please allow popups to view the PDF', 'error');
+                }
+            } else {
+                this.showToast('PDF generator unavailable.', 'error');
+            }
+        } else {
+            this.showToast('No PDF file data found for this module. Please re-upload.', 'error');
+        }
+    },
+
+    editModule(moduleId) {
+        const mod = (this.state.uploadedModules || []).find(m => m._id === moduleId);
+        if (!mod) return this.showToast('Module not found', 'error');
+
+        if (document.getElementById('editModuleModal')) return;
+        const modal = document.createElement('div');
+        modal.id = 'editModuleModal';
+        modal.style.cssText = `position:fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(10px); z-index:2500; display:flex; justify-content:center; align-items:center; padding:20px;`;
+
+        modal.innerHTML = `
+            <div class="glass" style="width:600px; padding:40px; position:relative; border:1px solid var(--cyan); border-radius:15px; max-height:90vh; overflow-y:auto;">
+                <button style="position:absolute; top:20px; right:20px; background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;" onclick="document.getElementById('editModuleModal').remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+                <h3 style="color:var(--cyan); margin-bottom:25px;">Edit Module</h3>
+                
+                <input type="hidden" id="editModId" value="${mod._id}">
+                
+                <div style="margin-bottom:15px;">
+                    <label style="color:var(--text-secondary); font-size:0.85rem; display:block; margin-bottom:8px;">Module Title</label>
+                    <input type="text" id="editModTitle" class="input-style" value="${mod.title || ''}" style="width:100%; padding:10px;">
+                </div>
+                
+                <div style="margin-bottom:15px;">
+                    <label style="color:var(--text-secondary); font-size:0.85rem; display:block; margin-bottom:8px;">Module Content / Summary</label>
+                    <textarea id="editModContent" class="input-style" style="width:100%; padding:10px; min-height:100px;">${mod.content || ''}</textarea>
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:25px;">
+                    <div>
+                        <label style="color:var(--text-secondary); font-size:0.85rem; display:block; margin-bottom:8px;">Target Class</label>
+                        <select id="editModStandard" style="width:100%; padding:12px; background:rgba(15,23,50,0.9); border:1px solid rgba(255,255,255,0.1); border-radius:12px; color:white;">
+                            <option value="">All Standards</option>
+                            ${[6, 7, 8, 9, 10, 11, 12].map(s => `<option value="${s}" ${mod.targetStandard == s ? 'selected' : ''}>${s}th Standard</option>`).join('')}
+                        </select>
+                    </div>
+                    <div>
+                        <label style="color:var(--text-secondary); font-size:0.85rem; display:block; margin-bottom:8px;">Target Section</label>
+                        <select id="editModSection" style="width:100%; padding:12px; background:rgba(15,23,50,0.9); border:1px solid rgba(255,255,255,0.1); border-radius:12px; color:white;">
+                            <option value="">All Sections</option>
+                            ${['A', 'B', 'C', 'D', 'E', 'F'].map(s => `<option value="${s}" ${mod.targetSection == s ? 'selected' : ''}>Section ${s}</option>`).join('')}
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display:flex; justify-content:flex-end; gap:15px;">
+                    <button class="btn" style="background:rgba(255,255,255,0.1); width:auto; padding:10px 20px;" onclick="document.getElementById('editModuleModal').remove()">Cancel</button>
+                    <button class="btn btn-primary" style="width:auto; padding:10px 20px;" onclick="App.submitEditModule()">Save Changes</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    },
+
+    async submitEditModule() {
+        const moduleId = document.getElementById('editModId').value;
+        const title = document.getElementById('editModTitle').value.trim();
+        const content = document.getElementById('editModContent').value.trim();
+        const targetStandard = document.getElementById('editModStandard').value;
+        const targetSection = document.getElementById('editModSection').value;
+
+        if (!title) return this.showToast('Module title is required', 'error');
+
+        try {
+            const response = await fetch(`http://localhost:5000/api/modules/${moduleId}`, {
+                method: 'PATCH',
+                headers: this.getAuthHeaders(),
+                body: JSON.stringify({ title, content, targetStandard, targetSection })
+            });
+
+            if (response.ok) {
+                this.showToast('Module updated successfully', 'success');
+                document.getElementById('editModuleModal').remove();
+                await this.loadModules();
+                this.render();
+            } else {
+                const data = await response.json();
+                this.showToast(data.message || 'Error updating module', 'error');
+            }
+        } catch (error) {
+            console.error('Module update error:', error);
+            this.showToast('Network error while updating module', 'error');
         }
     },
 
@@ -1735,10 +1895,16 @@ const App = {
                                                     <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
                                                         <td style="padding: 10px 0; color: white;">${s.name}</td>
                                                         <td style="padding: 10px 0; color: var(--text-secondary);">${s.email}</td>
-                                                        <td style="padding: 10px 0;">
-                                                            <span style="padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; background: ${s.participated ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)'}; color: ${s.participated ? 'var(--green)' : 'var(--red)'}; border: 1px solid ${s.participated ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'};">
-                                                                ${s.participated ? 'Participated' : 'Missed'}
-                                                            </span>
+                                                         <td style="padding: 10px 0;">
+                                                            ${(() => {
+                                                                const scheduledDate = item.drill ? new Date(item.drill.scheduledDate) : new Date();
+                                                                const isPast = scheduledDate < new Date();
+                                                                const status = s.participated ? 'Participated' : (isPast ? 'Missed' : '-');
+                                                                const bgColor = s.participated ? 'rgba(16, 185, 129, 0.1)' : (isPast ? 'rgba(239, 68, 68, 0.1)' : 'rgba(255, 255, 255, 0.05)');
+                                                                const color = s.participated ? 'var(--green)' : (isPast ? 'var(--red)' : 'var(--text-secondary)');
+                                                                const borderColor = s.participated ? 'rgba(16, 185, 129, 0.2)' : (isPast ? 'rgba(239, 68, 68, 0.2)' : 'rgba(255, 255, 255, 0.1)');
+                                                                return `<span style="padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; background: ${bgColor}; color: ${color}; border: 1px solid ${borderColor};">${status}</span>`;
+                                                            })()}
                                                         </td>
                                                         <td style="padding: 10px 0; color: ${s.participated ? 'var(--cyan)' : 'var(--text-secondary)'}; font-weight: 600;">
                                                             ${s.participated ? s.score + '%' : '-'}
@@ -2010,7 +2176,7 @@ const App = {
         const div = document.createElement('div');
         div.className = 'question-entry';
         div.style.cssText = 'background: rgba(255,255,255,0.02); padding: 25px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.08); position:relative; animation: slideDown 0.3s ease;';
-        
+
         const inputStyle = `width:100%; padding:10px 14px 10px 38px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); border-radius:10px; color:white; font-size:0.88rem; outline:none; box-sizing:border-box; transition:0.2s;`;
         const focusPurple = `onfocus="this.style.borderColor='rgba(139,92,246,0.35)'; this.style.background='rgba(139,92,246,0.04)';" onblur="this.style.borderColor='rgba(255,255,255,0.1)'; this.style.background='rgba(255,255,255,0.04)';" `;
 
@@ -2192,24 +2358,50 @@ const App = {
                         </div>
                     </div>
                     <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap:20px;">
-                        ${modules.map((m, i) => `
-                            <div class="glass glass-card" style="padding:25px; border:1px solid rgba(0,245,255,0.15);">
-                                <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:15px;">
-                                    <div style="width:45px; height:45px; border-radius:12px; background:rgba(0,245,255,0.1); display:flex; align-items:center; justify-content:center;">
-                                        <i class="fas fa-book-open" style="color:var(--cyan); font-size:1.2rem;"></i>
+                        ${modules.map((m, i) => {
+                            const progressRecord = (this.state.studentStats?.progress || []).find(p => p.module?._id === m._id || p.module === m._id);
+                            const isCompleted = progressRecord?.status === 'Completed';
+                            const percent = progressRecord?.percentComplete || 0;
+                            
+                            return `
+                                <div class="glass glass-card" style="padding:25px; border:1px solid ${isCompleted ? 'rgba(34,197,94,0.3)' : 'rgba(0,245,255,0.15)'}; position:relative;">
+                                    ${isCompleted ? `<div style="position:absolute; top:10px; right:10px; color:#22c55e;"><i class="fas fa-check-circle"></i></div>` : ''}
+                                    <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:15px;">
+                                        <div style="width:45px; height:45px; border-radius:12px; background:${isCompleted ? 'rgba(34,197,94,0.1)' : 'rgba(0,245,255,0.1)'}; display:flex; align-items:center; justify-content:center;">
+                                            <i class="fas fa-book-open" style="color:${isCompleted ? '#22c55e' : 'var(--cyan)'}; font-size:1.2rem;"></i>
+                                        </div>
+                                        <span style="font-size:0.75rem; font-weight:600; color:var(--text-secondary);">${m.fileName ? m.fileName.substring(0, 15) + '...' : 'Module'}</span>
                                     </div>
-                                    <span style="font-size:0.8rem; font-weight:600; color:var(--cyan);">${m.fileName ? m.fileName.substring(0, 15) + '...' : 'Module'}</span>
+                                    <h4 style="margin-bottom:12px; line-height:1.4; display:flex; align-items:center; gap:8px;">
+                                        ${m.title}
+                                        ${m.fileData ? `<span title="PDF Attached" style="background:rgba(0,245,255,0.1); color:var(--cyan); font-size:0.6rem; padding:2px 6px; border-radius:4px; border:1px solid rgba(0,245,255,0.2);"><i class="fas fa-file-pdf"></i> PDF</span>` : ''}
+                                    </h4>
+                                    <p style="font-size:0.8rem; color: var(--text-secondary); margin-bottom: 15px;">
+                                        <i class="fas fa-user" style="margin-right: 5px;"></i>
+                                        By: ${m.createdBy?.name || 'Teacher'}
+                                    </p>
+                                    
+                                    <div style="margin-bottom:15px; background:rgba(255,255,255,0.03); padding:12px; border-radius:12px; border:1px solid rgba(255,255,255,0.05);">
+                                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                                            <div style="display:flex; align-items:center; gap:6px;">
+                                                <i class="fas ${isCompleted ? 'fa-check-double' : 'fa-spinner fa-spin'}" style="color:${isCompleted ? '#22c55e' : 'var(--cyan)'}; font-size:0.7rem;"></i>
+                                                <span style="color:var(--text-secondary); font-size:0.7rem; font-weight:600; text-transform:uppercase;">${isCompleted ? 'Completed' : 'In Progress'}</span>
+                                            </div>
+                                            <span style="color:white; font-size:0.85rem; font-weight:800;">${percent}%</span>
+                                        </div>
+                                        <div style="height:6px; background:rgba(255,255,255,0.05); border-radius:10px; overflow:hidden; position:relative;">
+                                            <div style="width:${percent}%; height:100%; background:linear-gradient(90deg, ${isCompleted ? '#22c55e, #10b981' : 'var(--cyan), #0077ff'}); transition:1s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 0 10px ${isCompleted ? '#22c55e' : 'var(--cyan)'};"></div>
+                                        </div>
+                                    </div>
+
+                                    <button class="btn ${isCompleted ? '' : 'btn-primary'}" 
+                                            style="width:100%; padding:10px; font-size:0.85rem; ${isCompleted ? 'background:rgba(34,197,94,0.1); color:#22c55e; border:1px solid rgba(34,197,94,0.2);' : ''}" 
+                                            onclick="App.startModule('${m._id}')">
+                                        ${isCompleted ? '<i class="fas fa-redo-alt" style="margin-right:8px;"></i>Review' : '<i class="fas fa-play" style="margin-right:8px;"></i>Start'}
+                                    </button>
                                 </div>
-                                <h4 style="margin-bottom:12px; line-height:1.4;">${m.title}</h4>
-                                <p style="font-size:0.8rem; color: var(--text-secondary); margin-bottom: 15px;">
-                                    <i class="fas fa-user" style="margin-right: 5px;"></i>
-                                    By: ${m.createdBy?.name || 'Teacher'}
-                                </p>
-                                <button class="btn btn-primary" style="width:100%; padding:10px; font-size:0.85rem;" onclick="App.startModule('${m._id}')">
-                                    View Module
-                                </button>
-                            </div>
-                        `).join('')}
+                            `;
+                        }).join('')}
                     </div>
                 </div>`;
         }
@@ -2291,11 +2483,11 @@ const App = {
                                 <p style="color: var(--text-secondary);">No quizzes available at the moment</p>
                             </div>
                         ` : quizzes.map((q, i) => {
-                            const results = this.state.quizResults || [];
-                            // quizId is populated on backend, so we check ._id
-                            const result = results.find(r => (r.quizId?._id || r.quizId) === q._id);
-                            const isDone = !!result;
-                            return `
+                const results = this.state.quizResults || [];
+                // quizId is populated on backend, so we check ._id
+                const result = results.find(r => (r.quizId?._id || r.quizId) === q._id);
+                const isDone = !!result;
+                return `
                                 <div class="glass glass-card" style="padding: 25px; border-left: 4px solid ${isDone ? 'var(--cyan)' : 'var(--purple)'};">
                                     <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
                                         <div style="width: 45px; height: 45px; border-radius: 12px; background: ${isDone ? 'rgba(0, 245, 255, 0.1)' : 'rgba(139, 92, 246, 0.1)'}; display: flex; align-items: center; justify-content: center; color: ${isDone ? 'var(--cyan)' : 'var(--purple)'};">
@@ -2318,7 +2510,7 @@ const App = {
                                     </button>
                                 </div>
                             `;
-                        }).join('')}
+            }).join('')}
                     </div>
                 </div>`;
         }
@@ -2433,11 +2625,11 @@ const App = {
                         ${(stats.progress || []).length === 0 ? `<p style="color:var(--text-secondary); text-align:center;">Start your first module to see progress!</p>` : stats.progress.map(p => `
                             <div style="margin-bottom:20px;">
                                 <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-                                    <span style="font-size:0.9rem;">${p.moduleTitle}</span>
-                                    <span style="color:var(--cyan); font-size:0.85rem;">${p.status}</span>
+                                    <span style="font-size:0.9rem;">${p.module?.title || 'Module'}</span>
+                                    <span style="color:var(--cyan); font-size:0.85rem;">${p.percentComplete}%</span>
                                 </div>
                                 <div style="width:100%; height:6px; background:rgba(255,255,255,0.05); border-radius:3px; overflow:hidden;">
-                                    <div style="width:${p.status === 'Completed' ? '100' : '50'}%; height:100%; background:var(--cyan);"></div>
+                                    <div style="width:${p.percentComplete}%; height:100%; background:var(--cyan); transition:0.3s;"></div>
                                 </div>
                             </div>
                         `).join('')}
@@ -2833,14 +3025,14 @@ const App = {
                         <label style="${labelStyle}">Target Class (Standard)</label>
                         <select id="newDrillStandard" style="width:100%; padding:12px; background:rgba(15,23,50,0.9); border:1px solid rgba(255,255,255,0.1); border-radius:12px; color:white; font-size:0.9rem;">
                             <option value="">All Standards</option>
-                            ${[6,7,8,9,10,11,12].map(s => `<option value="${s}">${s}th Standard</option>`).join('')}
+                            ${[6, 7, 8, 9, 10, 11, 12].map(s => `<option value="${s}">${s}th Standard</option>`).join('')}
                         </select>
                     </div>
                     <div>
                         <label style="${labelStyle}">Target Section</label>
                         <select id="newDrillSection" style="width:100%; padding:12px; background:rgba(15,23,50,0.9); border:1px solid rgba(255,255,255,0.1); border-radius:12px; color:white; font-size:0.9rem;">
                             <option value="">All Sections</option>
-                            ${['A','B','C','D','E','F'].map(s => `<option value="${s}">Section ${s}</option>`).join('')}
+                            ${['A', 'B', 'C', 'D', 'E', 'F'].map(s => `<option value="${s}">Section ${s}</option>`).join('')}
                         </select>
                     </div>
                 </div>
@@ -3035,48 +3227,162 @@ const App = {
         try {
             await startModuleProgress(moduleId);
             this.showModuleViewer(moduleId);
-            this.loadStudentStats(); // Refresh progress stats
+            await this.loadStudentStats(); // Refresh progress stats
+            this.render(); // Update UI to show 'In Progress'
         } catch (error) {
             console.error('Error starting module:', error);
             this.showModuleViewer(moduleId); // Still show viewer even if progress fails
         }
     },
 
+    triggerConfetti() {
+        const colors = ['#00f5ff', '#8b5cf6', '#22c55e', '#ffffff'];
+        for (let i = 0; i < 50; i++) {
+            const confetti = document.createElement('div');
+            confetti.style.cssText = `
+                position:fixed; 
+                width:10px; height:10px; 
+                background:${colors[Math.floor(Math.random() * colors.length)]};
+                top:-10px;
+                left:${Math.random() * 100}vw;
+                border-radius:50%;
+                z-index:3000;
+                pointer-events:none;
+                animation: fall ${2 + Math.random() * 3}s linear forwards;
+            `;
+            document.body.appendChild(confetti);
+            setTimeout(() => confetti.remove(), 5000);
+        }
+
+        if (!document.getElementById('confetti-style')) {
+            const style = document.createElement('style');
+            style.id = 'confetti-style';
+            style.textContent = `
+                @keyframes fall {
+                    to { transform: translateY(110vh) rotate(360deg); }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+    },
+
+    async updateModuleProgress(moduleId, percent) {
+        try {
+            await trackModuleProgress(moduleId, percent);
+            
+            if (percent === 100) {
+                this.showToast('Module completed successfully', 'success');
+            } else {
+                this.showToast(`Progress: ${percent}%`, 'info');
+            }
+
+            await this.loadStudentStats();
+            this.render();
+            
+            if (percent === 100) {
+                const modal = document.getElementById('moduleViewerModal');
+                if (modal) setTimeout(() => modal.remove(), 1000);
+            }
+        } catch (error) {
+            console.error('Error updating progress:', error);
+            this.showToast('Failed to save progress', 'error');
+        }
+    },
+
+    async completeModule(moduleId) {
+        return this.updateModuleProgress(moduleId, 100);
+    },
+
     showModuleViewer(moduleId) {
         const modules = this.state.uploadedModules || [];
         const mod = modules.find(m => m._id === moduleId);
+        if (!mod) return;
 
-        if (!mod) {
-            this.showToast('Module not found', 'error');
-            return;
-        }
+        const progressRecord = (this.state.studentStats?.progress || []).find(p => p.module?._id === moduleId || p.module === moduleId);
+        const currentPercent = progressRecord?.percentComplete || 0;
 
         const modal = document.createElement('div');
         modal.id = 'moduleViewerModal';
-        modal.style.cssText = `position:fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(10px); z-index:2500; display:flex; justify-content:center; align-items:center; padding:20px;`;
+        modal.style.cssText = `position:fixed; inset:0; background:rgba(2,6,23,0.95); backdrop-filter:blur(15px); z-index:2500; display:flex; justify-content:center; align-items:center; padding:20px;`;
+
+        let pdfViewerHtml = '';
+        if (mod.fileData) {
+            pdfViewerHtml = `<embed src="${mod.fileData}" type="application/pdf" width="100%" height="650px" style="border-radius:12px; border:1px solid rgba(0,245,255,0.2); shadow: 0 10px 30px rgba(0,0,0,0.5);">`;
+        }
 
         modal.innerHTML = `
-            <div class="glass" style="width:800px; max-height:85vh; overflow-y:auto; padding:50px; position:relative; border:1px solid var(--cyan);">
-                <button style="position:absolute; top:20px; right:20px; background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;" onclick="document.getElementById('moduleViewerModal').remove(); App.render();">
+            <div class="glass" style="width:1000px; max-height:95vh; overflow-y:auto; padding:40px; position:relative; border:1px solid rgba(0,245,255,0.3); box-shadow: 0 0 50px rgba(0,245,255,0.1);">
+                <button style="position:absolute; top:20px; right:20px; background:rgba(255,255,255,0.05); border:none; color:white; width:40px; height:40px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center;" onclick="document.getElementById('moduleViewerModal').remove(); App.render();">
                     <i class="fas fa-times"></i>
                 </button>
-                <div style="display:flex; align-items:center; gap:20px; margin-bottom:30px;">
-                    <div style="width:60px; height:60px; background:rgba(0,245,255,0.1); border-radius:15px; display:flex; align-items:center; justify-content:center; color:var(--cyan); font-size:1.5rem;">
-                        <i class="fas fa-book-reader"></i>
+                
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:20px;">
+                    <div style="display:flex; align-items:center; gap:20px;">
+                        <div style="width:60px; height:60px; background:linear-gradient(135deg, var(--cyan), #0077ff); border-radius:15px; display:flex; align-items:center; justify-content:center; color:white; font-size:1.5rem; box-shadow: 0 0 20px rgba(0,245,255,0.3);">
+                            <i class="fas fa-graduation-cap"></i>
+                        </div>
+                        <div>
+                            <h2 style="color:white; font-size:1.8rem; margin:0;">${mod.title}</h2>
+                            <p style="color:var(--cyan); font-size:0.9rem; margin-top:5px; font-weight:600; text-transform:uppercase; letter-spacing:1px;">Module Learning Path</p>
+                        </div>
                     </div>
-                    <div>
-                        <h2 style="color:var(--cyan);">${mod.title}</h2>
-                        <p style="color:var(--text-secondary); font-size:0.9rem;">Course Content • 10 min read</p>
+                    <div style="text-align:right;">
+                        <div style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:5px;">OVERALL COMPLETION</div>
+                        <div style="font-size:1.5rem; font-weight:800; color:var(--cyan);">${currentPercent}%</div>
                     </div>
                 </div>
-                <div class="module-body" style="line-height:1.8; color:rgba(255,255,255,0.9); font-size:1.05rem;">
-                    <div style="margin-bottom:30px; background:rgba(255,255,255,0.03); padding:25px; border-radius:15px; border:1px solid rgba(255,255,255,0.05);">
-                        ${mod.content ? mod.content.replace(/\n/g, '<br>') : 'No content available for this module yet.'}
+
+                <div style="display:grid; grid-template-columns: 1fr 300px; gap:30px;">
+                    <div class="content-area">
+                        ${pdfViewerHtml || `
+                            <div style="background:rgba(255,255,255,0.03); padding:30px; border-radius:15px; border:1px solid rgba(255,255,255,0.05); line-height:1.8; color:rgba(255,255,255,0.9);">
+                                ${mod.content ? mod.content.replace(/\n/g, '<br>') : 'Exploring the foundations of disaster preparedness...'}
+                            </div>
+                        `}
                     </div>
-                    
-                    <div class="glass" style="padding:20px; background:rgba(0,245,255,0.05); border-radius:12px; border:1px dashed var(--cyan);">
-                        <p style="font-weight:600; color:var(--cyan);"><i class="fas fa-info-circle" style="margin-right:10px;"></i>Module Information</p>
-                        <p style="font-size:0.9rem; margin-top:5px;">This module was created to enhance your disaster preparedness. Please review the content carefully.</p>
+
+                    <div class="sidebar-area">
+                        <div class="glass" style="padding:25px; border-radius:20px; background:rgba(255,255,255,0.02);">
+                            <h4 style="margin-bottom:20px; font-size:1rem; display:flex; align-items:center; gap:10px;">
+                                <i class="fas fa-tasks" style="color:var(--cyan);"></i> Learning Milestones
+                            </h4>
+                            
+                            <div class="milestone-container" style="display:flex; flex-direction:column; gap:0; position:relative; padding-left:10px;">
+                                <div style="position:absolute; left:27px; top:10px; bottom:10px; width:2px; background:rgba(255,255,255,0.05); z-index:0;"></div>
+                                <div id="milestone-progress-line" style="position:absolute; left:27px; top:10px; width:2px; height:${currentPercent}%; background:linear-gradient(to bottom, var(--cyan), #0077ff); z-index:0; transition:height 1s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 0 10px var(--cyan);"></div>
+
+                                ${[
+                                    { p: 0, t: 'Discovery', d: 'Orientation', icon: 'fa-compass' },
+                                    { p: 50, t: 'Engagement', d: 'Deep Learning', icon: 'fa-bolt' },
+                                    { p: 100, t: 'Validation', d: 'Assessment', icon: 'fa-shield-check' }
+                                ].map((step, idx, arr) => {
+                                    const isReached = currentPercent >= step.p;
+                                    const isNext = !isReached && (idx === 0 || currentPercent >= (arr[idx-1]?.p || 0));
+                                    return `
+                                        <div class="milestone-item" style="display:flex; gap:20px; padding:20px 0; position:relative; cursor:pointer; transition:all 0.4s ease;" 
+                                             onclick="App.updateModuleProgress('${mod._id}', ${step.p})">
+                                            <div style="
+                                                width:36px; height:36px; border-radius:10px; 
+                                                background:${isReached ? 'var(--cyan)' : 'rgba(255,255,255,0.03)'}; 
+                                                color:${isReached ? '#000' : 'rgba(255,255,255,0.4)'}; 
+                                                display:flex; align-items:center; justify-content:center; z-index:1; 
+                                                border:1px solid ${isReached ? 'var(--cyan)' : 'rgba(255,255,255,0.1)'};
+                                                box-shadow:${isReached ? '0 0 20px rgba(0,245,255,0.4)' : 'none'};
+                                                transform:${isReached ? 'scale(1.1)' : 'scale(1)'};
+                                                transition:all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                                            ">
+                                                <i class="fas ${step.icon}" style="font-size:1rem;"></i>
+                                            </div>
+                                            <div style="flex:1;">
+                                                <div style="font-weight:700; color:${isReached ? 'white' : 'rgba(255,255,255,0.3)'}; font-size:1rem; letter-spacing:0.5px;">${step.t}</div>
+                                                <div style="font-size:0.75rem; color:${isReached ? 'var(--cyan)' : 'rgba(255,255,255,0.2)'}; font-weight:500;">${step.d}</div>
+                                            </div>
+                                            ${isReached ? `<div style="color:var(--cyan); font-size:0.8rem;"><i class="fas fa-check-double"></i></div>` : ''}
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>`;
@@ -3297,7 +3603,7 @@ const App = {
             }
 
             this.showToast('Points generated successfully!', 'success');
-            
+
             // Sync background data
             await Promise.all([
                 this.loadStudentStats(),
@@ -3458,6 +3764,8 @@ const App = {
         const email = this.state.profiles[role]?.email || '';
         const title = this.state.profiles[role]?.title || '';
         const avatar = this.state.profiles[role]?.avatar || 'Felix';
+        const standard = this.state.profiles[role]?.standard || '';
+        const section = this.state.profiles[role]?.section || '';
         const roleColors = { admin: 'var(--cyan)', teacher: 'var(--indigo)', student: 'var(--purple)' };
         const roleIcons = { admin: 'fa-user-shield', teacher: 'fa-chalkboard-teacher', student: 'fa-user-graduate' };
         const color = roleColors[role];
@@ -3500,6 +3808,7 @@ const App = {
                             <i class="fas ${roleIcons[role]}" style="color:${color}; font-size:0.7rem;"></i>
                             <span style="color:${color}; font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">${role}</span>
                         </div>
+                        ${(role === 'teacher' && standard) ? `<div style="margin-top:6px;"><span style="font-size:0.75rem; color:var(--text-secondary);"><i class="fas fa-graduation-cap" style="margin-right:5px; color:${color};"></i>Standard: ${standard}${section ? ' | Section: ' + section : ''}</span></div>` : ''}
                     </div>
                 </div>
                 ${title ? `<p style="font-size:0.75rem; color:var(--text-secondary); margin-top:12px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.05);">${title}</p>` : ''}
@@ -3573,10 +3882,10 @@ const App = {
 
                     <div style="display:grid; gap:25px;">
                         ${quiz.questionsList.map((q, qIdx) => {
-                            const studentAns = result.answers.find(a => a.questionIndex === qIdx);
-                            const isCorrect = studentAns ? studentAns.isCorrect : false;
-                            
-                            return `
+                const studentAns = result.answers.find(a => a.questionIndex === qIdx);
+                const isCorrect = studentAns ? studentAns.isCorrect : false;
+
+                return `
                                 <div style="padding:30px; border-radius:20px; background:rgba(255,255,255,0.02); border:1px solid ${isCorrect ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'}; position:relative; overflow:hidden;">
                                     <div style="position:absolute; top:0; left:0; width:6px; height:100%; background:${isCorrect ? '#22c55e' : '#ef4444'};"></div>
                                     <p style="font-size:1.1rem; font-weight:700; margin-bottom:20px; color:white;">
@@ -3584,37 +3893,37 @@ const App = {
                                     </p>
                                     <div style="display:grid; gap:12px;">
                                         ${q.options.map((opt, optIdx) => {
-                                            const isSelected = studentAns && studentAns.selectedOption === optIdx;
-                                            const isActualCorrect = optIdx === q.correct;
-                                            
-                                            let border = '1px solid rgba(255,255,255,0.05)';
-                                            let bg = 'rgba(255,255,255,0.02)';
-                                            let badge = '';
+                    const isSelected = studentAns && studentAns.selectedOption === optIdx;
+                    const isActualCorrect = optIdx === q.correct;
 
-                                            if (isActualCorrect) {
-                                                border = '1px solid #22c55e';
-                                                bg = 'rgba(34,197,94,0.1)';
-                                                badge = '<span style="margin-left:auto; color:#22c55e; font-size:0.75rem; font-weight:bold;"><i class="fas fa-check-circle"></i> CORRECT ANSWER</span>';
-                                            } else if (isSelected && !isCorrect) {
-                                                border = '1px solid #ef4444';
-                                                bg = 'rgba(239,68,68,0.1)';
-                                                badge = '<span style="margin-left:auto; color:#ef4444; font-size:0.75rem; font-weight:bold;"><i class="fas fa-times-circle"></i> YOUR ANSWER</span>';
-                                            } else if (isSelected && isCorrect) {
-                                                badge = '<span style="margin-left:auto; color:#22c55e; font-size:0.75rem; font-weight:bold;"><i class="fas fa-user-check"></i> YOUR CHOICE</span>';
-                                            }
+                    let border = '1px solid rgba(255,255,255,0.05)';
+                    let bg = 'rgba(255,255,255,0.02)';
+                    let badge = '';
 
-                                            return `
+                    if (isActualCorrect) {
+                        border = '1px solid #22c55e';
+                        bg = 'rgba(34,197,94,0.1)';
+                        badge = '<span style="margin-left:auto; color:#22c55e; font-size:0.75rem; font-weight:bold;"><i class="fas fa-check-circle"></i> CORRECT ANSWER</span>';
+                    } else if (isSelected && !isCorrect) {
+                        border = '1px solid #ef4444';
+                        bg = 'rgba(239,68,68,0.1)';
+                        badge = '<span style="margin-left:auto; color:#ef4444; font-size:0.75rem; font-weight:bold;"><i class="fas fa-times-circle"></i> YOUR ANSWER</span>';
+                    } else if (isSelected && isCorrect) {
+                        badge = '<span style="margin-left:auto; color:#22c55e; font-size:0.75rem; font-weight:bold;"><i class="fas fa-user-check"></i> YOUR CHOICE</span>';
+                    }
+
+                    return `
                                                 <div style="display:flex; align-items:center; padding:15px 20px; border-radius:12px; background:${bg}; border:${border}; color:rgba(255,255,255,0.8); font-size:0.95rem;">
                                                     <span style="margin-right:15px; width:20px; height:20px; border-radius:50%; background:rgba(255,255,255,0.05); display:flex; align-items:center; justify-content:center; font-size:0.7rem; font-weight:bold;">${String.fromCharCode(65 + optIdx)}</span>
                                                     ${opt}
                                                     ${badge}
                                                 </div>
                                             `;
-                                        }).join('')}
+                }).join('')}
                                     </div>
                                 </div>
                             `;
-                        }).join('')}
+            }).join('')}
                     </div>
                 </div>
             `;
@@ -3702,12 +4011,12 @@ const App = {
                     p.y = -20;
                     p.x = Math.random() * canvas.width;
                 }
-                
+
                 ctx.save();
                 ctx.translate(p.x, p.y);
                 ctx.rotate(p.angle * Math.PI / 180);
                 ctx.fillStyle = p.color;
-                ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size);
+                ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
                 ctx.restore();
             });
             if (document.getElementById('badge-celebration')) requestAnimationFrame(animate);
