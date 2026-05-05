@@ -938,12 +938,17 @@ const App = {
     renderActiveAlerts() {
         if (!this.state.activeAlerts || this.state.activeAlerts.length === 0) return '';
         return this.state.activeAlerts.map((alert, index) => `
-            <div style="background: ${alert.type === 'Critical' ? 'rgba(239, 68, 68, 0.2)' : alert.type === 'Warning' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(0, 245, 255, 0.1)'}; border-left: 4px solid ${alert.type === 'Critical' ? 'var(--red)' : alert.type === 'Warning' ? 'var(--yellow)' : 'var(--cyan)'}; padding: 15px 20px; margin-bottom: 20px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-                <div style="display: flex; gap: 10px; align-items: center;">
-                    <i class="fas fa-solid fa-bullhorn pulse" style="color: ${alert.type === 'Critical' ? 'var(--red)' : alert.type === 'Warning' ? 'var(--yellow)' : 'var(--cyan)'};"></i>
-                    <span style="color: white; font-weight: 500;">SYSTEM BROADCAST: ${alert.message}</span>
+            <div style="background: linear-gradient(90deg, #dc2626 0%, #991b1b 100%); border: 2px solid #ef4444; padding: 18px 25px; margin-bottom: 25px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 10px 30px rgba(220, 38, 38, 0.3); animation: slideDown 0.5s ease-out;">
+                <div style="display: flex; gap: 15px; align-items: center;">
+                    <div style="background: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; animation: pulse 1s infinite;">
+                        <i class="fas fa-exclamation-triangle" style="color: #dc2626; font-size: 1.2rem;"></i>
+                    </div>
+                    <div>
+                        <span style="color: white; font-weight: 800; font-size: 1.1rem; letter-spacing: 1px; text-transform: uppercase;">ALERT:</span>
+                        <span style="color: white; font-weight: 500; font-size: 1rem; margin-left: 5px;">${alert.message}</span>
+                    </div>
                 </div>
-                ${this.state.role === 'admin' ? `<i class="fas fa-times" style="color: var(--text-secondary); cursor: pointer;" onclick="App.dismissAlert('${alert.id}')"></i>` : ''}
+                ${this.state.role === 'admin' ? `<i class="fas fa-times" style="color: rgba(255,255,255,0.7); cursor: pointer; font-size: 1.2rem; transition: 0.2s;" onmouseover="this.style.color='white'" onmouseout="this.style.color='rgba(255,255,255,0.7)'" onclick="App.dismissAlert('${alert.id}')"></i>` : ''}
             </div>
         `).join('');
     },
@@ -962,7 +967,7 @@ const App = {
 
         if (input) input.value = '';
 
-        this.showToast('Broadcast sent successfully', 'success');
+        this.showToast('ALERT sent successfully', 'success');
         this.saveState();
         this.render();
     },
@@ -1294,38 +1299,53 @@ const App = {
     getAlertPanel() {
         const alerts = this.state.activeAlerts || [];
         return `
-            <div class="glass pulse" style="padding: 30px; border: 1px solid rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.05); margin-bottom: 30px;">
-                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
-                    <i class="fas fa-exclamation-triangle" style="color: var(--red); font-size: 1.5rem;"></i>
-                    <h3>Emergency Broadcast Panel</h3>
-                </div>
-                <div style="display: flex; gap: 20px; align-items: flex-end; margin-bottom: 20px;">
-                    <div style="flex: 1;">
-                        <label style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:5px; display:block;">Alert Message</label>
-                        <input type="text" id="alertInput" class="input-style" placeholder="Type emergency alert message here...">
+            <div class="glass pulse" style="padding: 30px; border: 2px solid #dc2626; background: rgba(220, 38, 38, 0.05); margin-bottom: 30px; border-radius: 16px;">
+                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 25px;">
+                    <div style="width: 50px; height: 50px; background: #dc2626; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px rgba(220, 38, 38, 0.4);">
+                        <i class="fas fa-exclamation-triangle" style="color: white; font-size: 1.5rem;"></i>
                     </div>
-                    <div style="width: 150px;">
-                        <label style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:5px; display:block;">Severity</label>
-                        <select id="alertType" class="input-style" style="background:#0f172a; color:white;">
-                            <option value="Info">Info</option>
-                            <option value="Warning">Warning</option>
-                            <option value="Critical">Critical</option>
+                    <div>
+                        <h3 style="color: white; margin: 0;">Emergency ALERT Panel</h3>
+                        <p style="color: var(--text-secondary); margin: 5px 0 0; font-size: 0.85rem;">Instantly notify all active users across the platform</p>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 20px; align-items: flex-end; margin-bottom: 10px;">
+                    <div style="flex: 1;">
+                        <label style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:8px; display:block; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Alert Message</label>
+                        <input type="text" id="alertInput" class="input-style" placeholder="Describe the emergency situation..." style="background: rgba(0,0,0,0.3); border: 1px solid rgba(220, 38, 38, 0.3);">
+                    </div>
+                    <div style="width: 180px;">
+                        <label style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:8px; display:block; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Severity Level</label>
+                        <select id="alertType" class="input-style" style="background:#0f172a; color:white; border: 1px solid rgba(220, 38, 38, 0.3);">
+                            <option value="Info">Low (Information)</option>
+                            <option value="Warning">Medium (Warning)</option>
+                            <option value="Critical">High (EMERGENCY)</option>
                         </select>
                     </div>
-                    <button class="btn" style="background: var(--red); color: white; width: 140px;" onclick="App.sendAlert()">Send Broadcast</button>
+                    <button class="btn" style="background: #dc2626; color: white; width: 160px; font-weight: 800; letter-spacing: 1px; box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3); height: 48px;" onclick="App.sendAlert()">SEND ALERT</button>
                 </div>
             </div>
 
-            <div class="glass" style="padding: 30px;">
-                <h3 style="margin-bottom: 20px;">Active Broadcasts</h3>
+            <div class="glass" style="padding: 30px; border-radius: 16px;">
+                <h3 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-history" style="color: var(--cyan);"></i> Active Alerts History
+                </h3>
                 <div style="display: grid; gap: 15px;">
-                    ${alerts.length === 0 ? `<p style="color:var(--text-secondary); text-align:center;">No active alerts</p>` : alerts.map(a => `
-                        <div class="glass" style="padding:15px 20px; display:flex; justify-content:space-between; align-items:center; border-left:4px solid ${a.type === 'Critical' ? 'var(--red)' : a.type === 'Warning' ? 'var(--yellow)' : 'var(--cyan)'};">
+                    ${alerts.length === 0 ? `
+                        <div style="text-align: center; padding: 40px;">
+                            <i class="fas fa-bell-slash" style="font-size: 2.5rem; color: var(--text-secondary); opacity: 0.3; margin-bottom: 15px; display: block;"></i>
+                            <p style="color:var(--text-secondary);">No active emergency alerts at this time</p>
+                        </div>
+                    ` : alerts.map(a => `
+                        <div class="glass" style="padding:18px 25px; display:flex; justify-content:space-between; align-items:center; border-left:5px solid ${a.type === 'Critical' ? '#dc2626' : a.type === 'Warning' ? '#f59e0b' : '#00f5ff'}; background: rgba(255,255,255,0.02); border-radius: 10px;">
                             <div>
-                                <p style="font-weight:500;">${a.message}</p>
-                                <span style="font-size:0.75rem; color:var(--text-secondary);">${a.type} Priority</span>
+                                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                                    <span style="font-size: 0.7rem; font-weight: 800; padding: 3px 10px; border-radius: 20px; background: ${a.type === 'Critical' ? 'rgba(220, 38, 38, 0.15)' : a.type === 'Warning' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(0, 245, 255, 0.15)'}; color: ${a.type === 'Critical' ? '#dc2626' : a.type === 'Warning' ? '#f59e0b' : '#00f5ff'}; border: 1px solid ${a.type === 'Critical' ? '#dc2626' : a.type === 'Warning' ? '#f59e0b' : '#00f5ff'}; text-transform: uppercase;">${a.type}</span>
+                                    <span style="font-size: 0.75rem; color: var(--text-secondary);"><i class="far fa-clock"></i> Just now</span>
+                                </div>
+                                <p style="font-weight:600; color: white; margin: 0; font-size: 1.05rem;">${a.message}</p>
                             </div>
-                            <button class="btn" style="width:auto; padding:5px 12px; font-size:0.75rem; background:rgba(239,68,68,0.1); color:var(--red);" onclick="App.dismissAlert('${a.id}')">Dismiss</button>
+                            <button class="btn" style="width:auto; padding:8px 18px; font-size:0.8rem; background:rgba(239,68,68,0.1); color:#ef4444; border: 1px solid rgba(239,68,68,0.3); font-weight: 600;" onclick="App.dismissAlert('${a._id}')">DISMISS</button>
                         </div>
                     `).join('')}
                 </div>
@@ -1340,11 +1360,11 @@ const App = {
 
         try {
             await sendAdminAlert(msg, type);
-            this.showToast('Alert broadcasted successfully!', 'success');
+            this.showToast('ALERT broadcasted successfully!', 'success');
             document.getElementById('alertInput').value = '';
             await this.loadAlerts();
         } catch (error) {
-            this.showToast('Failed to send alert', 'error');
+            this.showToast('Failed to send ALERT', 'error');
         }
     },
 
