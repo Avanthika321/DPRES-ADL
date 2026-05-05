@@ -552,7 +552,7 @@ window.App = {
             '<p style="color: var(--text-secondary); font-size: 0.95rem; margin-top: 10px;">' + subtitle + '</p>' +
             '</div>' +
             registerFields +
-            '<div class="input-group"><label>Username</label><input type="text" id="login-user" class="input-style" placeholder="Username or Email"></div>' +
+            '<div class="input-group"><label>Email</label><input type="email" id="login-user" class="input-style" placeholder="Email"></div>' +
             '<div class="input-group" style="margin-bottom: 25px;"><label>Password</label><input type="password" id="login-pass" class="input-style" placeholder="••••••••"></div>' +
             registerExtras +
             '<div id="login-error" style="display:none; color:var(--red); background:rgba(239, 68, 68, 0.1); padding:12px; border-radius:10px; font-size:0.9rem; margin-bottom:20px; border:1px solid rgba(239, 68, 68, 0.2);"></div>' +

@@ -50,7 +50,7 @@ const getStudentStats = async (req, res) => {
             modulesCompleted,
             totalModules,
             avgQuizScore,
-            totalPoints,
+            totalScore: totalPoints,
             quizzesCompleted: quizResults.length,
             drillsParticipated,
             nextDrill: nextDrill ? {
