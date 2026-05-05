@@ -58,12 +58,20 @@ const getStudentPerformance = async (req, res) => {
         const teacherQuizIds = (await Quiz.find({ createdBy: teacherId }).select('_id')).map(q => q._id);
 
         const performanceData = await Promise.all(students.map(async (student) => {
+            // Get modules targeted for this student's class
+            const studentModulesCount = await Module.countDocuments({
+                $or: [
+                    { targetStandard: student.standard, targetSection: student.section },
+                    { targetStandard: '', targetSection: '' } // Global modules
+                ]
+            });
+
             // Module completion percentage
             const completedModules = await UserProgress.countDocuments({
                 user: student._id,
                 status: 'Completed'
             });
-            const moduleAvg = totalModules > 0 ? Math.round((completedModules / totalModules) * 100) : 0;
+            const moduleAvg = studentModulesCount > 0 ? Math.round((completedModules / studentModulesCount) * 100) : 0;
 
             // Average quiz score (for quizzes created by this teacher)
             const quizResults = await QuizResult.find({

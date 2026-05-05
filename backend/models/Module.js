@@ -18,6 +18,10 @@ const moduleSchema = mongoose.Schema({
         type: String,
         required: false
     },
+    fileData: {
+        type: String,
+        required: false
+    },
     students: {
         type: Number,
         default: 0
