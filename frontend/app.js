@@ -1598,59 +1598,7 @@ const App = {
             return;
         }
 
-        if (mod.fileData) {
-            const newWindow = window.open();
-            if (newWindow) {
-                newWindow.document.write(`
-                    <html>
-                        <head><title>${mod.title}</title></head>
-                        <body style="margin:0; padding:0; overflow:hidden;">
-                            <embed src="${mod.fileData}" type="application/pdf" width="100%" height="100%">
-                        </body>
-                    </html>
-                `);
-            } else {
-                this.showToast('Popup blocked. Showing in-app viewer...', 'info');
-                this.showModuleViewer(moduleId);
-            }
-        } else if (mod.fileName) {
-            // Restore the original beautifully formatted jsPDF document
-            if (window.jspdf) {
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF();
-                
-                doc.setFont('helvetica', 'bold');
-                doc.setFontSize(22);
-                doc.setTextColor(0, 196, 204); // Cyan color
-                doc.text(mod.title || 'Module Document', 20, 30);
-                
-                doc.setFont('helvetica', 'normal');
-                doc.setFontSize(10);
-                doc.setTextColor(100, 100, 100);
-                doc.text(`File: ${mod.fileName || 'N/A'}  |  Uploaded: ${new Date(mod.createdAt || Date.now()).toLocaleDateString()}`, 20, 42);
-                
-                doc.setFontSize(12);
-                doc.setTextColor(30, 30, 30);
-                
-                const contentText = mod.content || 'No content provided for this module.';
-                const splitText = doc.splitTextToSize(contentText, 170);
-                doc.text(splitText, 20, 60);
-                
-                const blob = doc.output('blob');
-                const newWindow = window.open('', '_blank');
-                if (newWindow) {
-                    newWindow.document.write('<html style="background:#333;"><body style="color:white; font-family:sans-serif; text-align:center; padding-top:50px;">Loading PDF Document...</body></html>');
-                    const blobUrl = URL.createObjectURL(blob);
-                    newWindow.location.href = blobUrl;
-                } else {
-                    this.showToast('Please allow popups to view the PDF', 'error');
-                }
-            } else {
-                this.showToast('PDF generator unavailable.', 'error');
-            }
-        } else {
-            this.showToast('No PDF file data found for this module. Please re-upload.', 'error');
-        }
+        this.showModuleViewer(moduleId);
     },
 
     editModule(moduleId) {
@@ -1660,51 +1608,83 @@ const App = {
         if (document.getElementById('editModuleModal')) return;
         const modal = document.createElement('div');
         modal.id = 'editModuleModal';
-        modal.style.cssText = `position:fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(10px); z-index:2500; display:flex; justify-content:center; align-items:center; padding:20px;`;
+        modal.style.cssText = `position:fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(15px); z-index:2500; display:flex; justify-content:center; align-items:center; padding:20px;`;
 
         modal.innerHTML = `
-            <div class="glass" style="width:600px; padding:40px; position:relative; border:1px solid var(--cyan); border-radius:15px; max-height:90vh; overflow-y:auto;">
-                <button style="position:absolute; top:20px; right:20px; background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;" onclick="document.getElementById('editModuleModal').remove()">
+            <div class="glass" style="width:1000px; max-height:95vh; overflow-y:auto; padding:40px; position:relative; border:1px solid rgba(0,245,255,0.3); box-shadow: 0 0 50px rgba(0,245,255,0.1);">
+                <button style="position:absolute; top:20px; right:20px; background:rgba(255,255,255,0.05); border:none; color:white; width:40px; height:40px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center;" onclick="document.getElementById('editModuleModal').remove()">
                     <i class="fas fa-times"></i>
                 </button>
-                <h3 style="color:var(--cyan); margin-bottom:25px;">Edit Module</h3>
                 
                 <input type="hidden" id="editModId" value="${mod._id}">
                 
-                <div style="margin-bottom:15px;">
-                    <label style="color:var(--text-secondary); font-size:0.85rem; display:block; margin-bottom:8px;">Module Title</label>
-                    <input type="text" id="editModTitle" class="input-style" value="${mod.title || ''}" style="width:100%; padding:10px;">
-                </div>
-                
-                <div style="margin-bottom:15px;">
-                    <label style="color:var(--text-secondary); font-size:0.85rem; display:block; margin-bottom:8px;">Module Content / Summary</label>
-                    <textarea id="editModContent" class="input-style" style="width:100%; padding:10px; min-height:100px;">${mod.content || ''}</textarea>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:20px;">
+                    <div style="display:flex; align-items:center; gap:20px; flex:1;">
+                        <div style="width:60px; height:60px; background:linear-gradient(135deg, var(--cyan), #0077ff); border-radius:15px; display:flex; align-items:center; justify-content:center; color:white; font-size:1.5rem; box-shadow: 0 0 20px rgba(0,245,255,0.3);">
+                            <i class="fas fa-graduation-cap"></i>
+                        </div>
+                        <div style="flex:1; max-width:600px;">
+                            <input type="text" id="editModTitle" value="${mod.title || ''}" placeholder="Module Title" style="width:100%; background:transparent; border:none; border-bottom:1px dashed rgba(0,245,255,0.5); color:white; font-size:1.8rem; font-weight:bold; outline:none; padding:5px 0; transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--cyan)'" onblur="this.style.borderColor='rgba(0,245,255,0.5)'">
+                            <p style="color:var(--cyan); font-size:0.9rem; margin-top:5px; font-weight:600; text-transform:uppercase; letter-spacing:1px;">Edit Module Learning Path</p>
+                        </div>
+                    </div>
+                    <div>
+                        <button class="btn btn-primary" style="padding:12px 25px; font-size:1rem; background:linear-gradient(135deg, var(--cyan), #0077ff); border:none; border-radius:12px; font-weight:700; box-shadow:0 10px 20px rgba(0,245,255,0.2); transition:transform 0.2s;" onclick="App.submitEditModule()" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                            <i class="fas fa-save" style="margin-right:8px;"></i> Save Changes
+                        </button>
+                    </div>
                 </div>
 
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:25px;">
+                <div style="display:grid; grid-template-columns: 1fr; gap:30px; margin-bottom:20px;">
+                    <div class="content-area">
+                        <textarea id="editModContent" style="width:100%; background:rgba(255,255,255,0.03); padding:30px; border-radius:15px; border:1px dashed rgba(0,245,255,0.3); line-height:1.8; color:rgba(255,255,255,0.9); font-size:1.05rem; min-height:250px; resize:vertical; outline:none; font-family:inherit; transition:border-color 0.2s;" placeholder="Enter module content here..." onfocus="this.style.borderColor='var(--cyan)'" onblur="this.style.borderColor='rgba(0,245,255,0.3)'">${mod.content || ''}</textarea>
+                    </div>
+                </div>
+
+                <div style="margin-bottom:20px; background:rgba(255,255,255,0.02); padding:20px; border-radius:15px; border:1px solid rgba(255,255,255,0.05);">
+                    <label style="color:var(--text-secondary); font-size:0.85rem; display:block; margin-bottom:8px; font-weight:600; text-transform:uppercase; letter-spacing:1px;">Re-upload / Update PDF Document (Optional)</label>
+                    <input type="file" id="editPdfInput" accept=".pdf" style="width:100%; padding:10px; color:white; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid rgba(255,255,255,0.1);" onchange="App.handleEditFileSelect(this)">
+                    <p style="font-size:0.8rem; color:var(--cyan); margin-top:8px;" id="editPdfStatus">${mod.fileData ? '<i class="fas fa-check-circle"></i> A PDF is currently attached to this module.' : '<i class="fas fa-exclamation-triangle" style="color:var(--yellow);"></i> No PDF is currently attached. Please re-upload.'}</p>
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; background:rgba(255,255,255,0.02); padding:25px; border-radius:15px; border:1px solid rgba(255,255,255,0.05);">
                     <div>
-                        <label style="color:var(--text-secondary); font-size:0.85rem; display:block; margin-bottom:8px;">Target Class</label>
-                        <select id="editModStandard" style="width:100%; padding:12px; background:rgba(15,23,50,0.9); border:1px solid rgba(255,255,255,0.1); border-radius:12px; color:white;">
+                        <label style="color:var(--text-secondary); font-size:0.85rem; display:block; margin-bottom:8px; font-weight:600; text-transform:uppercase; letter-spacing:1px;">Target Class</label>
+                        <select id="editModStandard" style="width:100%; padding:12px; background:rgba(15,23,50,0.9); border:1px solid rgba(255,255,255,0.1); border-radius:12px; color:white; outline:none; font-size:1rem; cursor:pointer;" onfocus="this.style.borderColor='var(--cyan)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
                             <option value="">All Standards</option>
                             ${[6, 7, 8, 9, 10, 11, 12].map(s => `<option value="${s}" ${mod.targetStandard == s ? 'selected' : ''}>${s}th Standard</option>`).join('')}
                         </select>
                     </div>
                     <div>
-                        <label style="color:var(--text-secondary); font-size:0.85rem; display:block; margin-bottom:8px;">Target Section</label>
-                        <select id="editModSection" style="width:100%; padding:12px; background:rgba(15,23,50,0.9); border:1px solid rgba(255,255,255,0.1); border-radius:12px; color:white;">
+                        <label style="color:var(--text-secondary); font-size:0.85rem; display:block; margin-bottom:8px; font-weight:600; text-transform:uppercase; letter-spacing:1px;">Target Section</label>
+                        <select id="editModSection" style="width:100%; padding:12px; background:rgba(15,23,50,0.9); border:1px solid rgba(255,255,255,0.1); border-radius:12px; color:white; outline:none; font-size:1rem; cursor:pointer;" onfocus="this.style.borderColor='var(--cyan)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
                             <option value="">All Sections</option>
                             ${['A', 'B', 'C', 'D', 'E', 'F'].map(s => `<option value="${s}" ${mod.targetSection == s ? 'selected' : ''}>Section ${s}</option>`).join('')}
                         </select>
                     </div>
                 </div>
-
-                <div style="display:flex; justify-content:flex-end; gap:15px;">
-                    <button class="btn" style="background:rgba(255,255,255,0.1); width:auto; padding:10px 20px;" onclick="document.getElementById('editModuleModal').remove()">Cancel</button>
-                    <button class="btn btn-primary" style="width:auto; padding:10px 20px;" onclick="App.submitEditModule()">Save Changes</button>
-                </div>
             </div>
         `;
         document.body.appendChild(modal);
+    },
+
+    handleEditFileSelect(input) {
+        const file = input.files[0];
+        if (!file) return;
+        if (file.type !== 'application/pdf') {
+            this.showToast('Only PDF files are accepted', 'error');
+            input.value = '';
+            return;
+        }
+        document.getElementById('editPdfStatus').innerHTML = `<i class="fas fa-spinner fa-spin"></i> Processing ${file.name}...`;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            if (!this.state) this.state = {};
+            this.state.editFileData = e.target.result;
+            this.state.editFileName = file.name;
+            document.getElementById('editPdfStatus').innerHTML = `<i class="fas fa-check-circle" style="color:#22c55e;"></i> Ready to save: <strong>${file.name}</strong>`;
+        };
+        reader.readAsDataURL(file);
     },
 
     async submitEditModule() {
@@ -1715,16 +1695,28 @@ const App = {
         const targetSection = document.getElementById('editModSection').value;
 
         if (!title) return this.showToast('Module title is required', 'error');
+        
+        const payload = { title, content, targetStandard, targetSection };
+        
+        // If they uploaded a new PDF, include it in the update payload
+        if (this.state && this.state.editFileData) {
+            payload.fileData = this.state.editFileData;
+            payload.fileName = this.state.editFileName;
+        }
 
         try {
             const response = await fetch(`http://localhost:5000/api/modules/${moduleId}`, {
                 method: 'PATCH',
                 headers: this.getAuthHeaders(),
-                body: JSON.stringify({ title, content, targetStandard, targetSection })
+                body: JSON.stringify(payload)
             });
 
             if (response.ok) {
                 this.showToast('Module updated successfully', 'success');
+                if (this.state) {
+                    this.state.editFileData = null;
+                    this.state.editFileName = null;
+                }
                 document.getElementById('editModuleModal').remove();
                 await this.loadModules();
                 this.render();
@@ -3307,8 +3299,25 @@ const App = {
 
         let pdfViewerHtml = '';
         if (mod.fileData) {
-            pdfViewerHtml = `<embed src="${mod.fileData}" type="application/pdf" width="100%" height="650px" style="border-radius:12px; border:1px solid rgba(0,245,255,0.2); shadow: 0 10px 30px rgba(0,0,0,0.5);">`;
+            pdfViewerHtml = `<embed src="${mod.fileData}" type="application/pdf" width="100%" height="650px" style="border-radius:12px; border:1px solid rgba(0,245,255,0.2); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">`;
         }
+
+        let moduleSummary = `Welcome to the <strong>${mod.title}</strong> module! Dive into this comprehensive guide to understand the essential protocols and life-saving strategies for this specific scenario. Pay close attention to the details, as your quick thinking could make all the difference during an actual emergency.`;
+
+        const titleLower = (mod.title || '').toLowerCase();
+        const type = mod.disasterType || '';
+
+        if (type === 'Earthquake' || titleLower.includes('earthquake')) {
+            moduleSummary = `The <strong>${mod.title}</strong> module prepares you for sudden seismic events. Learn the critical "Drop, Cover, and Hold On" techniques, understand structural safety, and discover how to secure your environment before the shaking starts. Your readiness is your best defense!`;
+        } else if (type === 'Fire' || titleLower.includes('fire')) {
+            moduleSummary = `Welcome to the <strong>${mod.title}</strong> module. Fire emergencies require split-second decisions. This guide will walk you through evacuation routes, extinguisher usage (PASS method), and hazard prevention. Master these skills to protect yourself and those around you.`;
+        } else if (type === 'Flood' || titleLower.includes('flood')) {
+            moduleSummary = `In the <strong>${mod.title}</strong> module, you'll learn how to respond to rising waters. From identifying high ground to understanding emergency kits and avoiding contaminated water, this training ensures you stay afloat and secure during severe water-related crises.`;
+        } else if (type === 'Tornado' || titleLower.includes('tornado') || type === 'Hurricane' || titleLower.includes('hurricane')) {
+            moduleSummary = `Welcome to the <strong>${mod.title}</strong> module. Severe weather strikes fast. Explore how to find safe shelter, monitor weather alerts, and prepare an emergency go-bag. Stay informed and stay safe during extreme winds and storms.`;
+        }
+
+        const isTeacher = this.state.role === 'teacher';
 
         modal.innerHTML = `
             <div class="glass" style="width:1000px; max-height:95vh; overflow-y:auto; padding:40px; position:relative; border:1px solid rgba(0,245,255,0.3); box-shadow: 0 0 50px rgba(0,245,255,0.1);">
@@ -3326,64 +3335,50 @@ const App = {
                             <p style="color:var(--cyan); font-size:0.9rem; margin-top:5px; font-weight:600; text-transform:uppercase; letter-spacing:1px;">Module Learning Path</p>
                         </div>
                     </div>
+                    ${!isTeacher ? `
                     <div style="text-align:right;">
                         <div style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:5px;">OVERALL COMPLETION</div>
                         <div style="font-size:1.5rem; font-weight:800; color:var(--cyan);">${currentPercent}%</div>
                     </div>
+                    ` : ''}
                 </div>
 
-                <div style="display:grid; grid-template-columns: 1fr 300px; gap:30px;">
+                <div style="display:grid; grid-template-columns: ${isTeacher ? '1fr' : '1fr 300px'}; gap:30px;">
                     <div class="content-area">
                         ${pdfViewerHtml || `
-                            <div style="background:rgba(255,255,255,0.03); padding:30px; border-radius:15px; border:1px solid rgba(255,255,255,0.05); line-height:1.8; color:rgba(255,255,255,0.9);">
+                            <div style="background:rgba(255,255,255,0.03); padding:30px; border-radius:15px; border:1px solid rgba(255,255,255,0.05); line-height:1.8; color:rgba(255,255,255,0.9); font-size:1.05rem; min-height:400px;">
                                 ${mod.content ? mod.content.replace(/\n/g, '<br>') : 'Exploring the foundations of disaster preparedness...'}
                             </div>
                         `}
                     </div>
 
+                    ${!isTeacher ? `
                     <div class="sidebar-area">
-                        <div class="glass" style="padding:25px; border-radius:20px; background:rgba(255,255,255,0.02);">
-                            <h4 style="margin-bottom:20px; font-size:1rem; display:flex; align-items:center; gap:10px;">
-                                <i class="fas fa-tasks" style="color:var(--cyan);"></i> Learning Milestones
+                        <div class="glass" style="padding:25px; border-radius:20px; background:rgba(255,255,255,0.02); display:flex; flex-direction:column; height:100%;">
+                            <h4 style="margin-bottom:20px; font-size:1.1rem; display:flex; align-items:center; gap:10px; color:white;">
+                                <i class="fas fa-info-circle" style="color:var(--cyan);"></i> Module Overview
                             </h4>
                             
-                            <div class="milestone-container" style="display:flex; flex-direction:column; gap:0; position:relative; padding-left:10px;">
-                                <div style="position:absolute; left:27px; top:10px; bottom:10px; width:2px; background:rgba(255,255,255,0.05); z-index:0;"></div>
-                                <div id="milestone-progress-line" style="position:absolute; left:27px; top:10px; width:2px; height:${currentPercent}%; background:linear-gradient(to bottom, var(--cyan), #0077ff); z-index:0; transition:height 1s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 0 10px var(--cyan);"></div>
+                            <div style="flex:1; line-height:1.7; color:rgba(255,255,255,0.8); font-size:0.95rem; font-family: 'Inter', sans-serif;">
+                                ${moduleSummary}
+                            </div>
 
-                                ${[
-                                    { p: 0, t: 'Discovery', d: 'Orientation', icon: 'fa-compass' },
-                                    { p: 50, t: 'Engagement', d: 'Deep Learning', icon: 'fa-bolt' },
-                                    { p: 100, t: 'Validation', d: 'Assessment', icon: 'fa-shield-check' }
-                                ].map((step, idx, arr) => {
-                                    const isReached = currentPercent >= step.p;
-                                    const isNext = !isReached && (idx === 0 || currentPercent >= (arr[idx-1]?.p || 0));
-                                    return `
-                                        <div class="milestone-item" style="display:flex; gap:20px; padding:20px 0; position:relative; cursor:pointer; transition:all 0.4s ease;" 
-                                             onclick="App.updateModuleProgress('${mod._id}', ${step.p})">
-                                            <div style="
-                                                width:36px; height:36px; border-radius:10px; 
-                                                background:${isReached ? 'var(--cyan)' : 'rgba(255,255,255,0.03)'}; 
-                                                color:${isReached ? '#000' : 'rgba(255,255,255,0.4)'}; 
-                                                display:flex; align-items:center; justify-content:center; z-index:1; 
-                                                border:1px solid ${isReached ? 'var(--cyan)' : 'rgba(255,255,255,0.1)'};
-                                                box-shadow:${isReached ? '0 0 20px rgba(0,245,255,0.4)' : 'none'};
-                                                transform:${isReached ? 'scale(1.1)' : 'scale(1)'};
-                                                transition:all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-                                            ">
-                                                <i class="fas ${step.icon}" style="font-size:1rem;"></i>
-                                            </div>
-                                            <div style="flex:1;">
-                                                <div style="font-weight:700; color:${isReached ? 'white' : 'rgba(255,255,255,0.3)'}; font-size:1rem; letter-spacing:0.5px;">${step.t}</div>
-                                                <div style="font-size:0.75rem; color:${isReached ? 'var(--cyan)' : 'rgba(255,255,255,0.2)'}; font-weight:500;">${step.d}</div>
-                                            </div>
-                                            ${isReached ? `<div style="color:var(--cyan); font-size:0.8rem;"><i class="fas fa-check-double"></i></div>` : ''}
-                                        </div>
-                                    `;
-                                }).join('')}
+                            <div style="margin-top:30px; text-align:center;">
+                                ${currentPercent >= 100 ? 
+                                    `<button class="btn" style="width:100%; padding:15px; font-size:1rem; background:rgba(34,197,94,0.1); color:#22c55e; border:1px solid rgba(34,197,94,0.3); border-radius:12px; cursor:default; display:flex; justify-content:center; align-items:center;">
+                                        <i class="fas fa-check-circle" style="margin-right:8px;"></i> Completed
+                                    </button>` :
+                                    `<button class="btn btn-primary" style="width:100%; padding:15px; font-size:1rem; background:linear-gradient(135deg, var(--cyan), #0077ff); border:none; border-radius:12px; font-weight:700; box-shadow:0 10px 20px rgba(0,245,255,0.2); transition:transform 0.2s, box-shadow 0.2s; display:flex; justify-content:center; align-items:center; color:white; cursor:pointer;" 
+                                        onclick="App.updateModuleProgress('${mod._id}', 100)" 
+                                        onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 12px 25px rgba(0,245,255,0.3)';" 
+                                        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 10px 20px rgba(0,245,255,0.2)';">
+                                        <i class="fas fa-flag-checkered" style="margin-right:8px;"></i> Submit & Complete
+                                    </button>`
+                                }
                             </div>
                         </div>
                     </div>
+                    ` : ''}
                 </div>
             </div>`;
         document.body.appendChild(modal);
