@@ -318,6 +318,17 @@ window.App = {
         }
     },
 
+    async loadDrillReminders() {
+        try {
+            console.log('📥 Fetching drill reminders...');
+            const reminders = await getMyDrillReminders();
+            this.state.drillReminders = reminders;
+        } catch (error) {
+            console.error('❌ Error loading drill reminders:', error);
+            this.state.drillReminders = [];
+        }
+    },
+
     async loadLeaderboard() {
         try {
             console.log('📥 Fetching leaderboard...');
@@ -377,6 +388,7 @@ window.App = {
             tasks.push(this.loadStudentStats());
             tasks.push(this.loadQuizResults());
             tasks.push(this.loadAchievements());
+            tasks.push(this.loadDrillReminders());
         }
 
         tasks.push(this.loadModules());
@@ -398,7 +410,9 @@ window.App = {
                 case 'Dashboard':
                     if (this.state.role === 'admin') await this.loadAdminStats();
                     else if (this.state.role === 'teacher') await this.loadTeacherStats();
-                    else if (this.state.role === 'student') await this.loadStudentStats();
+                    else if (this.state.role === 'student') {
+                        await Promise.all([this.loadStudentStats(), this.loadDrillReminders()]);
+                    }
                     break;
                 case 'Student Performance':
                     if (this.state.role === 'teacher') await this.loadStudentPerformanceStats();
@@ -1884,9 +1898,20 @@ window.App = {
                                             <span style="color: var(--cyan);"><i class="fas fa-info-circle" style="margin-right: 5px;"></i>${item.drill.status}</span>
                                         </div>
                                     </div>
-                                    <div style="text-align: right;">
-                                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--cyan);">${item.participated}/${item.totalRegistered}</div>
-                                        <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px;">Participation</div>
+                                    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 10px;">
+                                        <div style="text-align: right;">
+                                            <div style="font-size: 1.5rem; font-weight: 700; color: var(--cyan);">${item.participated}/${item.totalRegistered}</div>
+                                            <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px;">Participation</div>
+                                        </div>
+                                        <button
+                                            id="reminder-btn-${item.drill._id}"
+                                            onclick="App.sendDrillReminder('${item.drill._id}', '${item.drill.title.replace(/'/g, "\\'")}', this)"
+                                            style="display: flex; align-items: center; gap: 8px; padding: 9px 18px; border-radius: 10px; border: 1px solid rgba(0,245,255,0.35); background: rgba(0,245,255,0.08); color: var(--cyan); font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.25s; white-space: nowrap;"
+                                            onmouseover="this.style.background='rgba(0,245,255,0.18)'; this.style.borderColor='var(--cyan)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 14px rgba(0,245,255,0.2)';"
+                                            onmouseout="this.style.background='rgba(0,245,255,0.08)'; this.style.borderColor='rgba(0,245,255,0.35)'; this.style.transform='translateY(0)'; this.style.boxShadow='none';"
+                                        >
+                                            <i class="fas fa-bell"></i> Send Reminder
+                                        </button>
                                     </div>
                                 </div>
                                 
@@ -1942,6 +1967,65 @@ window.App = {
             </div>`;
     },
 
+    async sendDrillReminder(drillId, drillTitle, btn) {
+        if (!drillId) { this.showToast('Invalid drill ID', 'error'); return; }
+
+        // Update button to loading state
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+            btn.style.opacity = '0.7';
+        }
+
+        try {
+            const token = localStorage.getItem('crisis_craft_token');
+            const response = await fetch(`http://localhost:5000/api/drills/${drillId}/remind`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                this.showToast(
+                    `✅ Reminder sent to ${data.count || 'all'} student(s) for "${drillTitle}"`,
+                    'success'
+                );
+                if (btn) {
+                    btn.innerHTML = '<i class="fas fa-check"></i> Sent!';
+                    btn.style.background = 'rgba(34,197,94,0.15)';
+                    btn.style.borderColor = 'rgba(34,197,94,0.4)';
+                    btn.style.color = '#22c55e';
+                    setTimeout(() => {
+                        btn.innerHTML = '<i class="fas fa-bell"></i> Send Reminder';
+                        btn.style.background = 'rgba(0,245,255,0.08)';
+                        btn.style.borderColor = 'rgba(0,245,255,0.35)';
+                        btn.style.color = 'var(--cyan)';
+                        btn.disabled = false;
+                        btn.style.opacity = '1';
+                    }, 3000);
+                }
+            } else {
+                this.showToast(data.message || 'Failed to send reminder', 'error');
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-bell"></i> Send Reminder';
+                    btn.style.opacity = '1';
+                }
+            }
+        } catch (error) {
+            console.error('Reminder error:', error);
+            this.showToast('Network error sending reminder', 'error');
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-bell"></i> Send Reminder';
+                btn.style.opacity = '1';
+            }
+        }
+    },
 
     getTeacherOverview() {
         const stats = this.state.teacherStats || { studentsCount: 0, modulesCount: 0, quizzesCount: 0, avgScore: 0 };
@@ -2323,21 +2407,110 @@ window.App = {
         document.body.appendChild(modal);
     },
 
-    async sendDrillReminder(drillId) {
-        try {
-            await fetch(`http://localhost:5000/api/drills/${drillId}/remind`, {
-                method: 'POST',
-                headers: this.getAuthHeaders()
-            });
-            this.showToast('Reminders sent to all registered students!', 'success');
-        } catch (error) {
-            this.showToast('Failed to send reminders', 'error');
+
+    // Render drill reminder notification banners for students
+    renderDrillReminders() {
+        const reminders = (this.state.drillReminders || []).filter(r => !r.isRead);
+        if (reminders.length === 0) return '';
+
+        return `
+        <div id="drill-reminders-panel" style="margin-bottom: 25px; display: grid; gap: 12px;">
+            ${reminders.map(r => `
+                <div id="reminder-${r._id}" style="
+                    display: flex; align-items: flex-start; justify-content: space-between; gap: 15px;
+                    padding: 16px 22px;
+                    background: linear-gradient(135deg, rgba(79,70,229,0.18) 0%, rgba(139,92,246,0.12) 100%);
+                    border: 1px solid rgba(139,92,246,0.35);
+                    border-left: 4px solid var(--indigo);
+                    border-radius: 14px;
+                    box-shadow: 0 4px 20px rgba(79,70,229,0.15);
+                    animation: slideDown 0.4s ease-out;
+                ">
+                    <div style="display: flex; align-items: flex-start; gap: 14px; flex: 1;">
+                        <div style="
+                            width: 42px; height: 42px; flex-shrink: 0;
+                            background: rgba(139,92,246,0.2); border-radius: 11px;
+                            display: flex; align-items: center; justify-content: center;
+                            border: 1px solid rgba(139,92,246,0.35);
+                            animation: pulse 2s infinite;
+                        ">
+                            <i class="fas fa-bell" style="color: #a78bfa; font-size: 1rem;"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px; flex-wrap: wrap;">
+                                <span style="
+                                    font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;
+                                    padding: 3px 10px; border-radius: 20px;
+                                    background: rgba(139,92,246,0.25); color: #a78bfa;
+                                    border: 1px solid rgba(139,92,246,0.35);
+                                ">📣 Drill Reminder</span>
+                                <span style="font-size: 0.72rem; color: var(--text-secondary);">
+                                    <i class="far fa-clock" style="margin-right: 4px;"></i>
+                                    ${new Date(r.sentAt).toLocaleString('en-IN', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })}
+                                </span>
+                                ${r.sentBy ? `<span style="font-size: 0.72rem; color: var(--text-secondary);"><i class="fas fa-chalkboard-teacher" style="margin-right:4px;"></i>from ${r.sentBy.name}</span>` : ''}
+                            </div>
+                            <p style="color: white; font-size: 0.9rem; font-weight: 500; line-height: 1.6; margin: 0 0 8px;">${r.message}</p>
+                            ${r.drill ? `
+                            <div style="display: flex; gap: 14px; flex-wrap: wrap; padding: 8px 12px; background: rgba(0,0,0,0.15); border-radius: 8px; margin-top: 6px;">
+                                <span style="font-size: 0.78rem; color: #a78bfa; font-weight: 600;">
+                                    <i class="fas fa-vr-cardboard" style="margin-right: 5px;"></i>${r.drill.title}
+                                </span>
+                                <span style="font-size: 0.78rem; color: var(--text-secondary);">
+                                    <i class="fas fa-calendar-alt" style="margin-right: 5px;"></i>${new Date(r.drill.scheduledDate).toLocaleDateString('en-IN', { weekday:'short', day:'numeric', month:'long' })}
+                                </span>
+                                <span style="font-size: 0.78rem; color: ${r.drill.status === 'Active' ? '#22c55e' : 'var(--cyan)'}; font-weight:600;">
+                                    ● ${r.drill.status}
+                                </span>
+                            </div>` : ''}
+                        </div>
+                    </div>
+                    <button
+                        onclick="App.dismissDrillReminder('${r._id}')"
+                        title="Dismiss reminder"
+                        style="
+                            flex-shrink: 0; width: 28px; height: 28px;
+                            background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+                            border-radius: 8px; color: var(--text-secondary); cursor: pointer;
+                            display: flex; align-items: center; justify-content: center;
+                            transition: 0.2s; font-size: 0.8rem;
+                        "
+                        onmouseover="this.style.background='rgba(239,68,68,0.15)'; this.style.borderColor='rgba(239,68,68,0.3)'; this.style.color='var(--red)';"
+                        onmouseout="this.style.background='rgba(255,255,255,0.06)'; this.style.borderColor='rgba(255,255,255,0.1)'; this.style.color='var(--text-secondary)';"
+                    ><i class="fas fa-times"></i></button>
+                </div>
+            `).join('')}
+        </div>`;
+    },
+
+    async dismissDrillReminder(reminderId) {
+        // Animate card out
+        const card = document.getElementById(`reminder-${reminderId}`);
+        if (card) {
+            card.style.transition = 'all 0.3s ease';
+            card.style.opacity = '0';
+            card.style.transform = 'translateX(20px)';
+            card.style.maxHeight = card.offsetHeight + 'px';
+            setTimeout(() => {
+                card.style.maxHeight = '0';
+                card.style.padding = '0';
+                card.style.margin = '0';
+                setTimeout(() => card.remove(), 200);
+            }, 300);
         }
+        // Mark as read in local state
+        if (this.state.drillReminders) {
+            const rem = this.state.drillReminders.find(x => x._id === reminderId);
+            if (rem) rem.isRead = true;
+        }
+        // Persist read status to backend
+        try { await markDrillReminderRead(reminderId); } catch(e) { /* silent fail */ }
     },
 
     // --- STUDENT VIEWS ---
+
     renderStudentViews(section) {
-        if (section === 'Dashboard') return this.getStudentOverview();
+        if (section === 'Dashboard') return this.renderDrillReminders() + this.getStudentOverview();
 
         if (section === 'Learning Modules') {
             const modules = this.state.uploadedModules || [];

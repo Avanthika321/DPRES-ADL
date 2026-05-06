@@ -1,5 +1,6 @@
 const Drill = require('../models/Drill');
 const DrillRegistration = require('../models/DrillRegistration');
+const DrillReminder = require('../models/DrillReminder');
 const User = require('../models/User');
 const Achievement = require('../models/Achievement');
 
@@ -228,4 +229,87 @@ const getDrillParticipation = async (req, res) => {
     }
 };
 
-module.exports = { createDrill, getDrills, getDrill, updateDrill, deleteDrill, getNextDrill, registerForDrill, getDrillParticipation };
+// @desc    Send a participation reminder to all students registered for a drill
+// @route   POST /api/drills/:id/remind
+// @access  Protected (Teacher/Admin)
+const sendDrillReminder = async (req, res) => {
+    try {
+        const drill = await Drill.findById(req.params.id);
+        if (!drill) {
+            return res.status(404).json({ message: 'Drill not found' });
+        }
+
+        // Get all registered students for this drill
+        const registrations = await DrillRegistration.find({ drill: req.params.id })
+            .populate('user', 'name email');
+
+        if (registrations.length === 0) {
+            return res.status(200).json({
+                message: 'No students are registered for this drill yet.',
+                count: 0
+            });
+        }
+
+        const drillDate = new Date(drill.scheduledDate).toLocaleDateString('en-IN', {
+            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+        });
+
+        const reminderMessage = `📣 Reminder from your teacher: You are registered for the drill "${drill.title}" (${drill.disasterType}) scheduled on ${drillDate}. Please be prepared and attend on time!`;
+
+        // Save a DrillReminder record per student in DB
+        const reminderDocs = registrations.map(reg => ({
+            student: reg.user._id,
+            drill: drill._id,
+            message: reminderMessage,
+            sentBy: req.user._id,
+            isRead: false,
+            sentAt: new Date()
+        }));
+
+        await DrillReminder.insertMany(reminderDocs);
+
+        console.log(`\n📢 [DRILL REMINDER] Sent by ${req.user.name} for drill: "${drill.title}" to ${registrations.length} student(s)`);
+
+        res.json({
+            message: `Reminder successfully sent to ${registrations.length} registered student(s).`,
+            count: registrations.length,
+            drill: drill.title,
+            scheduledDate: drill.scheduledDate,
+            students: registrations.map(r => ({ name: r.user.name, email: r.user.email }))
+        });
+    } catch (error) {
+        console.error('Reminder error:', error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Get all reminders for the logged-in student
+// @route   GET /api/drills/my-reminders
+// @access  Protected (Student)
+const getMyDrillReminders = async (req, res) => {
+    try {
+        const reminders = await DrillReminder.find({ student: req.user._id })
+            .populate('drill', 'title disasterType scheduledDate status')
+            .populate('sentBy', 'name')
+            .sort({ sentAt: -1 })
+            .limit(20);
+
+        res.json(reminders);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Mark a reminder as read
+// @route   PATCH /api/drills/reminders/:reminderId/read
+// @access  Protected (Student)
+const markReminderRead = async (req, res) => {
+    try {
+        await DrillReminder.findByIdAndUpdate(req.params.reminderId, { isRead: true });
+        res.json({ message: 'Reminder marked as read' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+module.exports = { createDrill, getDrills, getDrill, updateDrill, deleteDrill, getNextDrill, registerForDrill, getDrillParticipation, sendDrillReminder, getMyDrillReminders, markReminderRead };
