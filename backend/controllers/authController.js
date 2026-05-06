@@ -59,10 +59,10 @@ const loginUser = async (req, res) => {
 
         if (!user) {
             console.log(`❌ Login Failed: User ${email} not found.`);
-            
+
             // Case 1: No password provided -> "Invalid username"
             if (!password || password.trim() === '') {
-                return res.status(401).json({ message: 'Invalid username' });
+                return res.status(401).json({ message: 'Invalid email' });
             }
 
             // Check if this password matches ANY other user in the system
@@ -77,10 +77,10 @@ const loginUser = async (req, res) => {
 
             if (passwordExistsInSystem) {
                 // Password is correct for SOMEONE, but the username is wrong
-                return res.status(401).json({ message: 'Invalid username' });
+                return res.status(401).json({ message: 'Invalid email' });
             } else {
                 // Username is wrong AND the password doesn't match anyone else either
-                return res.status(401).json({ message: 'Invalid username and password' });
+                return res.status(401).json({ message: 'Invalid email and password' });
             }
         }
 
