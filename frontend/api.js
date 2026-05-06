@@ -183,6 +183,14 @@ async function getDrillParticipation() {
     return await apiRequest('/drills/participation', 'GET');
 }
 
+async function getMyDrillReminders() {
+    return await apiRequest('/student/reminders', 'GET');
+}
+
+async function markDrillReminderRead(reminderId) {
+    return await apiRequest(`/student/reminders/${reminderId}/read`, 'PATCH');
+}
+
 // ========================
 // Admin API Calls
 // ========================
@@ -276,6 +284,8 @@ window.deleteDrill = deleteDrill;
 window.registerForDrill = registerForDrill;
 window.getNextDrill = getNextDrill;
 window.getDrillParticipation = getDrillParticipation;
+window.getMyDrillReminders = getMyDrillReminders;
+window.markDrillReminderRead = markDrillReminderRead;
 window.getAdminStats = getAdminStats;
 window.getAllUsers = getAllUsers;
 window.adminCreateUser = adminCreateUser;
