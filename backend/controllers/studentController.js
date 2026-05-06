@@ -5,6 +5,7 @@ const UserProgress = require('../models/UserProgress');
 const Achievement = require('../models/Achievement');
 const Drill = require('../models/Drill');
 const DrillRegistration = require('../models/DrillRegistration');
+const DrillReminder = require('../models/DrillReminder');
 
 // @desc    Get student dashboard stats
 // @route   GET /api/student/stats
@@ -96,4 +97,32 @@ const getAchievements = async (req, res) => {
     }
 };
 
-module.exports = { getStudentStats, getAchievements };
+// @desc    Get all drill reminders for the logged-in student
+// @route   GET /api/student/reminders
+// @access  Protected (Student)
+const getMyDrillReminders = async (req, res) => {
+    try {
+        const reminders = await DrillReminder.find({ student: req.user._id })
+            .populate('drill', 'title disasterType scheduledDate status')
+            .populate('sentBy', 'name')
+            .sort({ sentAt: -1 })
+            .limit(20);
+        res.json(reminders);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Mark a drill reminder as read
+// @route   PATCH /api/student/reminders/:reminderId/read
+// @access  Protected (Student)
+const markReminderRead = async (req, res) => {
+    try {
+        await DrillReminder.findByIdAndUpdate(req.params.reminderId, { isRead: true });
+        res.json({ message: 'Reminder marked as read' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+module.exports = { getStudentStats, getAchievements, getMyDrillReminders, markReminderRead };
