@@ -68,7 +68,7 @@ const createUser = async (req, res) => {
         const user = await User.create({
             name,
             email,
-            password: password || 'crisiscraft123', // default password
+            password: password || '123', // default password
             role: role || 'student',
             standard: standard || '',
             section: section || ''

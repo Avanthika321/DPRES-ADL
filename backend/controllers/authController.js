@@ -12,7 +12,39 @@ const registerUser = async (req, res) => {
         const userExists = await User.findOne({ email: normalizedEmail });
 
         if (userExists) {
-            return res.status(400).json({ message: 'User already exists' });
+            // Check if standard and section match the existing user
+            const standardMatch = userExists.standard === (standard || '');
+            const sectionMatch = userExists.section === (section || '');
+            
+            console.log('Registration check:', {
+                existingStandard: userExists.standard,
+                incomingStandard: standard || '',
+                standardMatch,
+                existingSection: userExists.section,
+                incomingSection: section || '',
+                sectionMatch
+            });
+
+            if (standardMatch && sectionMatch) {
+                // Accept registration for existing user: update password and name
+                userExists.password = password;
+                if (name) userExists.name = name;
+                await userExists.save();
+
+                return res.status(200).json({
+                    user: {
+                        _id: userExists._id,
+                        name: userExists.name,
+                        email: userExists.email,
+                        role: userExists.role,
+                        standard: userExists.standard,
+                        section: userExists.section
+                    },
+                    token: generateToken(userExists._id)
+                });
+            } else {
+                return res.status(400).json({ message: 'User already exists' });
+            }
         }
 
         const user = await User.create({
