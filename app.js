@@ -45,7 +45,7 @@ window.App = {
         if (token && role && userName) {
             try {
                 // Verify token is still valid by making a test API call
-                const response = await fetch('http://localhost:5000/api/auth/verify', {
+                const response = await fetch('https://dpres-adl.onrender.com/api/auth/verify', {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -151,7 +151,7 @@ window.App = {
         }
 
         try {
-            const response = await fetch('http://localhost:5000/api/auth/login', {
+            const response = await fetch('https://dpres-adl.onrender.com/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: userVal, password: passVal })
@@ -476,7 +476,7 @@ window.App = {
 
     async registerUser(name, email, password, role) {
         try {
-            const response = await fetch('http://localhost:5000/api/auth/register', {
+            const response = await fetch('https://dpres-adl.onrender.com/api/auth/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name, email, password, role })
@@ -596,7 +596,7 @@ window.App = {
         }
 
         try {
-            const response = await fetch('http://localhost:5000/api/auth/register', {
+            const response = await fetch('https://dpres-adl.onrender.com/api/auth/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name, email, password, role, standard, section })
@@ -1578,10 +1578,10 @@ window.App = {
         console.log('File:', file.name);
         console.log('Target Standard:', targetStandard);
         console.log('Target Section:', targetSection);
-        console.log('Sending fetch to http://localhost:5000/api/modules');
+        console.log('Sending fetch to https://dpres-adl.onrender.com/api/modules');
 
         try {
-            const response = await fetch('http://localhost:5000/api/modules', {
+            const response = await fetch('https://dpres-adl.onrender.com/api/modules', {
                 method: 'POST',
                 headers: this.getAuthHeaders(),
                 body: JSON.stringify({
@@ -1614,7 +1614,7 @@ window.App = {
     async removeModule(moduleId) {
         if (!confirm('Remove this module?')) return;
         try {
-            const response = await fetch(`http://localhost:5000/api/modules/${moduleId}`, {
+            const response = await fetch(`https://dpres-adl.onrender.com/api/modules/${moduleId}`, {
                 method: 'DELETE',
                 headers: this.getAuthHeaders()
             });
@@ -1747,7 +1747,7 @@ window.App = {
         }
 
         try {
-            const response = await fetch(`http://localhost:5000/api/modules/${moduleId}`, {
+            const response = await fetch(`https://dpres-adl.onrender.com/api/modules/${moduleId}`, {
                 method: 'PATCH',
                 headers: this.getAuthHeaders(),
                 body: JSON.stringify(payload)
@@ -1979,7 +1979,7 @@ window.App = {
 
         try {
             const token = localStorage.getItem('crisis_craft_token');
-            const response = await fetch(`http://localhost:5000/api/drills/${drillId}/remind`, {
+            const response = await fetch(`https://dpres-adl.onrender.com/api/drills/${drillId}/remind`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

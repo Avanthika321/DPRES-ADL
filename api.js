@@ -3,7 +3,7 @@
  * Handles authentication and API calls to backend
  */
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = 'https://dpres-adl.onrender.com/api';
 
 // ========================
 // Authentication Functions
