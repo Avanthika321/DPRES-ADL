@@ -131,16 +131,12 @@ http://localhost:5000
 
 ---
 
-## 📸 Screenshots
-_Add screenshots of Admin, Teacher, and Student dashboards here._
-
----
 
 ## 👥 Team Members
-- Your Name
-- Teammate 1
-- Teammate 2
-
+- Avanthika P S
+- Gokuladharshini M
+- Harini M
+- Shivani Prithika K K
 ---
 
 ## 📄 License
